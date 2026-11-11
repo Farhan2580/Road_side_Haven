@@ -79,7 +79,7 @@ namespace RoadsideHaven
                 var root = GetComponentInParent<MotelGameRoot>();
                 bool exploring = root != null && ((root.GetComponentInChildren<OwnerSandboxController>(true)?.IsWalking ?? false) || (root.GetComponentInChildren<WorldDrivingController>(true)?.IsDriving ?? false));
                 bool selected = !string.IsNullOrEmpty(snapshot.SelectedRoomId) || (snapshot.SelectionDetails?.StartsWith("Guest ") ?? false);
-                selectionText.transform.parent.gameObject.SetActive(selected && !exploring);
+                selectionText.transform.parent.gameObject.SetActive(selected && !exploring && !(root?.GetComponentInChildren<BusinessEmpireController>(true)?.PanelOpen ?? false));
             }
             if (instructionText != null)
             {

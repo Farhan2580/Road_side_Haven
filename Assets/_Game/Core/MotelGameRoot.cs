@@ -101,6 +101,7 @@ namespace RoadsideHaven
                 return;
             }
 
+            if (GetComponent<WorldCollisionSetup>() == null) gameObject.AddComponent<WorldCollisionSetup>();
             if (GetComponent<WorldSignboards>() == null) gameObject.AddComponent<WorldSignboards>();
             if (GetComponent<CompactGameHUD>() == null) gameObject.AddComponent<CompactGameHUD>();
             QualitySettings.vSyncCount = 0;

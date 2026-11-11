@@ -169,7 +169,8 @@ namespace RoadsideHaven.Editor
             InstallOwnerActivities(motel, controller);
             InstallMultiverse(motel);
             InstallLifeSystems(motel, controller);
-            if (motel.Find("Expanded District v1") != null) { InstallWorldLighting(motel, controller); return; }
+            InstallBusinessEmpire(motel);
+            if (motel.Find("Expanded District v1") != null) { InstallWorldLighting(motel, controller); if(!Application.isPlaying)WorldCollisionSetup.Apply(motel,true); return; }
             var district = new GameObject("Expanded District v1").transform;
             district.SetParent(motel, false);
             if (!Application.isPlaying) Undo.RegisterCreatedObjectUndo(district.gameObject, "Expand roadside district");
@@ -234,6 +235,7 @@ namespace RoadsideHaven.Editor
                 }, 4.5f);
             }
             InstallWorldLighting(motel, controller);
+            if(!Application.isPlaying)WorldCollisionSetup.Apply(motel,true);
         }
 
         private static void InstallParkingArrivals(MotelGameRoot motel)
@@ -368,9 +370,11 @@ namespace RoadsideHaven.Editor
             shape.transform.localScale = scale;
             shape.GetComponent<Renderer>().sharedMaterial = material;
             var collider = shape.GetComponent<Collider>();
-            collider.enabled = false;
-            if (Application.isPlaying) Object.Destroy(collider);
-            else Object.DestroyImmediate(collider);
+            if(!WorldCollisionRules.IsSolidName(name))
+            {
+                collider.enabled=false;
+                if(Application.isPlaying)Object.Destroy(collider);else Object.DestroyImmediate(collider);
+            }
         }
 
         private static void Plant(Transform parent, Vector3 position, float size)

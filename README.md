@@ -1,41 +1,48 @@
 # Roadside Haven
 
-A work-in-progress Unity motel and convenience-shop management prototype with an expanding single-player driving world.
+A Unity PC/laptop prototype combining motel and shop management with an open driving world.
 
-## Open and play
+## Run
 
-1. Install **Unity 6000.3.28f1** through Unity Hub.
-2. Clone this repository and add its root folder in Unity Hub.
-3. Open it and allow Unity to restore packages, import assets and compile scripts.
-4. Open `Assets/_Game/Generated/RoadsideHavenPrototype.unity`.
-5. Use **Roadside Haven > Apply Visual Upgrade** and save the scene to persist generated world additions for builds. In the Editor, pressing Play also previews additions automatically.
-6. Press Play in a landscape Game view.
+1. Open the project with **Unity 6000.3.28f1** and wait for import/compilation.
+2. Open `Assets/_Game/Generated/RoadsideHavenPrototype.unity`.
+3. Use **Roadside Haven > Apply Visual Upgrade** and save the scene to include generated additions in builds.
+4. Press Play. Editor Play Mode also previews additions automatically.
 
-If the prototype scene is missing, use **Roadside Haven > Create or Update Prototype**.
-
-## Current features
-
-- Guest reception queues, room assignment, checkout payments and timed cleaning.
-- Shop stock, scanning and checkout with a shared wallet.
-- Procedural characters and support for optional animated prefabs.
-- Car/CNG driving and a prototype car-wash interaction.
-- A generated 2 km x 2 km regional blockout: central motel, western city, northern mountain highway, southern beach and eastern industry.
-- Day/night lighting, six-season visual changes and a procedural sky shader.
+If the scene is missing, use **Roadside Haven > Create or Update Prototype**. Keep custom work outside generated layers.
 
 ## Controls
 
-Drag to pan, scroll/pinch to zoom, Q/E to rotate. Select a waiting guest, then an available room. Select a dirty room to clean it.
+| Key | Action |
+| --- | --- |
+| WASD / arrows | Move or drive |
+| Mouse / scroll | Look / camera distance |
+| Shift | Sprint |
+| Space | Jump / vehicle brake |
+| F / G | Enter-exit vehicle / nearby work |
+| M / P | Management map / on foot |
+| J / L | Garage and quests / NPC dialogue |
+| T / B | Dimensional portal / business portfolio |
+| R / Escape | Reset vehicle / release cursor and close menus |
 
-Use the on-screen driving buttons or Tab to select a car/CNG. WASD/arrows drive, Space brakes, R resets and MOTEL returns to management. F6 previews sunset, F7 night, F8 the next season and F9 a skyline camera view outside driving mode.
+Click the Game view for keyboard focus. MENU contains actions and controls help. F6/F7 preview sunset/night, F8 changes season, and F9 changes the management camera view.
 
-## Status and validation
+## Features
 
-This is a primitive-based prototype. Regional buildings are mostly exterior scenery. The motel's pedestrian NavMesh does not cover the full region. There is no multiplayer, persistent save system, realistic vehicle suspension or complete city simulation.
+- Guest check-in, room cleaning, checkout, shop stock and scanning.
+- Third-person walking, vehicle chase camera, car/CNG/truck ownership and upgrades.
+- Truck deliveries, NPC quests, relationships, reputation and optional conflict events.
+- A 2 km x 2 km regional blockout, solid-world collision repair and framed signs.
+- Six-season visuals, street/building/garden lights and an 80% day / 20% night cycle.
+- Four dimensional overlays, separate wallets and cross-universe item trading.
+- Business purchases, unlocks, upgrades, safe income and fictional bank investments.
 
-Recent C# changes were compiled against installed Unity assemblies. Unity Play Mode, shader rendering, regional driving, mobile input and device performance still require interactive validation. EditMode tests are under `Assets/_Game/Tests/Editor`; run them using Unity's Test Runner.
+Gameplay settings are in `Assets/_Game/Generated/HotelSettings.asset`. Business tuning is in `Assets/_Game/Business/Configuration/BusinessCatalog.asset` after installation.
 
-More implementation notes: [game README](Assets/_Game/README.md).
+## Status
 
-## Repository contents
+This is a primitive-based, single-player prototype. Progress resets on Play; save/load is not implemented. Dimensions share the physical map. Regional properties mostly use exterior/economic representations; full combat, helicopter flights, refueling and complete city simulation are not implemented.
 
-Assets (including `.meta` files), Packages and ProjectSettings are versioned. Unity caches, local backups, generated IDE projects and build outputs are ignored and recreated locally. No license for redistribution is declared by this repository; bundled third-party resources retain their respective notices.
+Runtime/Editor C# compilation and direct economy/calendar/classification checks have passed. Unity Play Mode, native physics tests, visual placement and laptop performance still require validation. Run the tests under `Assets/_Game/Tests/Editor` using Unity Test Runner.
+
+Assets and their `.meta` files, Packages and ProjectSettings are versioned. Local caches, recovery backups and generated IDE files are ignored. Bundled third-party resources retain their respective notices.

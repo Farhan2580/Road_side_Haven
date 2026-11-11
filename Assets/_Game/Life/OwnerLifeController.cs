@@ -25,7 +25,7 @@ namespace RoadsideHaven
         public string Status => message;
         public bool PanelOpen=>panel||dialogue;
         public void ClosePanel(){panel=false;dialogue=false;}
-        public void TogglePanel(){ if(motel.GetComponentInChildren<MultiverseController>(true)?.IsPortalPanelOpen ?? false)return; dialogue=false;panel=!panel; }
+        public void TogglePanel(){ motel.GetComponentInChildren<BusinessEmpireController>(true)?.ClosePanel(); if(motel.GetComponentInChildren<MultiverseController>(true)?.IsPortalPanelOpen ?? false)return; dialogue=false;panel=!panel; }
         public void OpenDialogue()=>Talk();
         public bool IsNormal => (motel.GetComponentInChildren<MultiverseController>(true)?.Current ?? UniverseId.Normal) == UniverseId.Normal;
         public void Configure(MotelGameRoot root,OwnerSandboxController player,WorldDrivingController vehicles)

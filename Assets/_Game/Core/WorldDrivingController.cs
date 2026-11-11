@@ -66,6 +66,7 @@ namespace RoadsideHaven
 
         private void Update()
         {
+            if(GetComponentInParent<MotelGameRoot>()?.GetComponentInChildren<BusinessEmpireController>(true)?.PanelOpen ?? false){throttle=turn=0;brake=true;return;}
             var keyboard = Keyboard.current;
             if (keyboard != null && keyboard.tabKey.wasPressedThisFrame)
                 SelectVehicle(active + 1 >= (vehicles == null ? 0 : vehicles.Length) ? -1 : active + 1);

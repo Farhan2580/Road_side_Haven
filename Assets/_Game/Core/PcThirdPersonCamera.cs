@@ -34,7 +34,8 @@ namespace RoadsideHaven
         private readonly RaycastHit[] hits=new RaycastHit[32];
         public bool InputBlocked => activeView && (ModalOpen || !Application.isFocused);
         private bool LookBlocked => InputBlocked || released;
-        private bool ModalOpen => (motel.GetComponent<CompactGameHUD>()?.MenuOpen ?? false) ||
+        private bool ModalOpen => (motel.GetComponentInChildren<BusinessEmpireController>(true)?.PanelOpen ?? false) ||
+            (motel.GetComponent<CompactGameHUD>()?.MenuOpen ?? false) ||
             (motel.GetComponentInChildren<OwnerLifeController>(true)?.PanelOpen ?? false) ||
             (motel.GetComponentInChildren<MultiverseController>(true)?.IsPortalPanelOpen ?? false) ||
             (motel.GetComponentInChildren<ShopHUD>(true)?.IsOpen ?? false);

@@ -23,7 +23,7 @@ namespace RoadsideHaven
         public string Status => message;
         public bool IsPortalPanelOpen => panel;
         public void ClosePortal()=>panel=false;
-        public void TogglePortal(){if(!AtPortal)return; motel.GetComponentInChildren<OwnerLifeController>(true)?.ClosePanel();panel=!panel;}
+        public void TogglePortal(){if(!AtPortal)return; motel.GetComponentInChildren<BusinessEmpireController>(true)?.ClosePanel(); motel.GetComponentInChildren<OwnerLifeController>(true)?.ClosePanel();panel=!panel;}
         private int threat, defenses;
         private int neonHeat;
         private string message = "Walk to the purple portal (-16,-6), then press T.";

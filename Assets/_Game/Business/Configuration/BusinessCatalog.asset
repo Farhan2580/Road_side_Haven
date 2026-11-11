@@ -1,0 +1,96 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 620f3e7d20114e9499a5c334007faa4b, type: 3}
+  m_Name: BusinessCatalog
+  m_EditorClassIdentifier: RoadsideHaven.Runtime::RoadsideHaven.BusinessCatalog
+  properties:
+  - id: base-motel
+    name: Home Motel
+    type: 0
+    price: 250
+    income: 12
+    interval: 60
+    daily: 0
+    starter: 1
+    unlockOwned: 0
+    upgradeCost: 80
+  - id: base-shop
+    name: Home Shop
+    type: 1
+    price: 160
+    income: 8
+    interval: 60
+    daily: 1
+    starter: 1
+    unlockOwned: 0
+    upgradeCost: 60
+  - id: highway-motel
+    name: Highway Motel
+    type: 0
+    price: 350
+    income: 25
+    interval: 60
+    daily: 0
+    starter: 0
+    unlockOwned: 2
+    upgradeCost: 100
+  - id: city-shop
+    name: City Shop
+    type: 1
+    price: 220
+    income: 85
+    interval: 60
+    daily: 1
+    starter: 0
+    unlockOwned: 2
+    upgradeCost: 80
+  - id: gas
+    name: Highway Gas
+    type: 2
+    price: 450
+    income: 30
+    interval: 75
+    daily: 0
+    starter: 0
+    unlockOwned: 3
+    upgradeCost: 120
+  - id: food
+    name: City Fast Food
+    type: 3
+    price: 400
+    income: 22
+    interval: 60
+    daily: 0
+    starter: 0
+    unlockOwned: 3
+    upgradeCost: 110
+  - id: helipad
+    name: VIP Helipad
+    type: 4
+    price: 750
+    income: 50
+    interval: 90
+    daily: 0
+    starter: 0
+    unlockOwned: 6
+    upgradeCost: 180
+  - id: bank
+    name: City Bank
+    type: 5
+    price: 1200
+    income: 100
+    interval: 60
+    daily: 1
+    starter: 0
+    unlockOwned: 7
+    upgradeCost: 250
+  expansionThreshold: 8

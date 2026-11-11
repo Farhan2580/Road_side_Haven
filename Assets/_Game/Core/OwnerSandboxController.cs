@@ -49,6 +49,8 @@ namespace RoadsideHaven
         private void Start()
         {
             character = GetComponent<CharacterController>();
+            character.detectCollisions=true;character.enableOverlapRecovery=true;character.skinWidth=.035f;
+            character.stepOffset=.22f;character.slopeLimit=45f;character.minMoveDistance=0;
             if(Vector2.Distance(new Vector2(transform.position.x,transform.position.z),new Vector2(-5,-6))<.5f)
             { character.enabled=false;transform.position=new Vector3(-1.8f,.2f,-5.8f);character.enabled=true; }
             visual = new GameObject("Owner visual").transform;
@@ -93,6 +95,7 @@ namespace RoadsideHaven
             var lifePanel = motel.GetComponentInChildren<OwnerLifeController>(true);
             if (lifePanel != null && lifePanel.PanelOpen) { planarVelocity=Vector3.zero; return; }
             if (motel.GetComponent<CompactGameHUD>()?.MenuOpen ?? false) { planarVelocity=Vector3.zero; return; }
+            if(motel.GetComponentInChildren<BusinessEmpireController>(true)?.PanelOpen ?? false){planarVelocity=Vector3.zero;return;}
             var keyboard = Keyboard.current;
             if (keyboard != null)
             {
