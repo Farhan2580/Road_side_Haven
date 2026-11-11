@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef984adfe39284642b22d8bd1a5d74c6, type: 3}
+  m_Name: ShopSettings
+  m_EditorClassIdentifier: RoadsideHaven.Runtime::RoadsideHaven.ShopSettings
+  products:
+  - {fileID: 11400000, guid: 15922aa948353304c937e375f845f6ef, type: 2}
+  - {fileID: 11400000, guid: ff28511f4ae8e504cbc847c3e4164241, type: 2}
+  - {fileID: 11400000, guid: 29d58737b98991a4cba424355dba801a, type: 2}
+  - {fileID: 11400000, guid: 727906de38ec285469551170c33722ed, type: 2}
+  maximumCustomers: 4
+  arrivalInterval: 12
+  patienceSeconds: 60
+  browseSeconds: 2
+  navigationTimeoutSeconds: 20
+  basketSize: 2

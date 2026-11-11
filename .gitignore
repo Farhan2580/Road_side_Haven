@@ -1,0 +1,51 @@
+# Unity-generated caches and local settings
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Bb]uild/
+/[Bb]uilds/
+/[Bb]ackups/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+# IDE and Unity-generated solution/project files
+/.vs/
+/.idea/
+/.vscode/
+*.csproj
+*.sln
+*.slnx
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.opendb
+*.VC.db
+*.pdb
+*.mdb
+*.tmp
+*.log
+
+# Local tooling and credentials
+/.codex/
+/.agents/
+/.aws/
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+*.p12
+*.pfx
+
+# OS files and packaged builds
+.DS_Store
+Thumbs.db
+*.apk
+*.aab
+*.unitypackage
+
+# Assets, their .meta files, Packages and ProjectSettings must be committed.
