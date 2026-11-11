@@ -13,10 +13,11 @@ namespace RoadsideHaven
         public readonly bool CanCleanSelectedRoom;
         public readonly string SelectedRoomId;
         public readonly string RoomOverview;
+        public readonly string CurrencyName;
 
         public HotelSnapshot(int coins, int occupiedRooms, int totalRooms, int waitingGuests,
             string selectionDetails, bool canCleanSelectedRoom, string selectedRoomId,
-            string roomOverview = "")
+            string roomOverview = "", string currencyName = "Coins")
         {
             Coins = coins;
             OccupiedRooms = occupiedRooms;
@@ -26,6 +27,7 @@ namespace RoadsideHaven
             CanCleanSelectedRoom = canCleanSelectedRoom;
             SelectedRoomId = selectedRoomId;
             RoomOverview = roomOverview;
+            CurrencyName = currencyName;
         }
     }
 

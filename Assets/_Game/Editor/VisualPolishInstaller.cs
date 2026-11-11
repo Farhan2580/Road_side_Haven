@@ -167,6 +167,8 @@ namespace RoadsideHaven.Editor
             InstallVillageCity(motel, controller);
             InstallRegionalWorld(motel, controller);
             InstallOwnerActivities(motel, controller);
+            InstallMultiverse(motel);
+            InstallLifeSystems(motel, controller);
             if (motel.Find("Expanded District v1") != null) { InstallWorldLighting(motel, controller); return; }
             var district = new GameObject("Expanded District v1").transform;
             district.SetParent(motel, false);

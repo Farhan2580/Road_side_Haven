@@ -24,6 +24,7 @@ namespace RoadsideHaven
         public void Bind(IHotelService hotelService, HotelEventHub events)
         {
             Unbind();
+            ApplyCompactLayout();
             _hotelService = hotelService;
             _events = events;
             if (_events != null)
@@ -67,20 +68,25 @@ namespace RoadsideHaven
         private void UpdateSnapshot(HotelSnapshot snapshot)
         {
             if (moneyText != null)
-                moneyText.text = $"COINS  {snapshot.Coins}";
+                moneyText.text = $"{snapshot.CurrencyName.ToUpperInvariant()}  {snapshot.Coins}";
             if (occupancyText != null)
                 occupancyText.text = $"ROOMS  {snapshot.OccupiedRooms}/{snapshot.TotalRooms}";
             if (waitingText != null)
                 waitingText.text = $"WAITING  {snapshot.WaitingGuests}";
             if (selectionText != null)
+            {
                 selectionText.text = snapshot.SelectionDetails;
+                var root = GetComponentInParent<MotelGameRoot>();
+                bool exploring = root != null && ((root.GetComponentInChildren<OwnerSandboxController>(true)?.IsWalking ?? false) || (root.GetComponentInChildren<WorldDrivingController>(true)?.IsDriving ?? false));
+                bool selected = !string.IsNullOrEmpty(snapshot.SelectedRoomId) || (snapshot.SelectionDetails?.StartsWith("Guest ") ?? false);
+                selectionText.transform.parent.gameObject.SetActive(selected && !exploring);
+            }
             if (instructionText != null)
             {
                 instructionText.enableAutoSizing = true;
                 instructionText.fontSizeMin = 14f;
                 instructionText.fontSizeMax = 21f;
-                instructionText.text = snapshot.RoomOverview +
-                    "\nSelect guest, then room. Select a dirty room to clean.";
+                instructionText.text = snapshot.RoomOverview;
             }
             if (actionButton != null)
                 actionButton.gameObject.SetActive(snapshot.CanCleanSelectedRoom);
@@ -92,12 +98,34 @@ namespace RoadsideHaven
 
         private void ShowFeedback(HotelFeedback feedback)
         {
+            if (feedback.Message.StartsWith("Guest ") && (feedback.Message.Contains("waiting") || feedback.Message.Contains("arrived") || feedback.Message.Contains("checked into"))) return;
             if (feedbackText == null)
                 return;
             feedbackText.text = feedback.Message;
             _feedbackRemaining = feedback.Duration;
         }
 
+        private void ApplyCompactLayout()
+        {
+            if(moneyText!=null)
+            {
+                var top=moneyText.transform.parent as RectTransform;
+                if(top!=null){top.anchorMin=new Vector2(.02f,.93f);top.anchorMax=new Vector2(.98f,.99f);}
+            }
+            foreach(var text in new[]{moneyText,occupancyText,waitingText})
+                if(text!=null){text.enableAutoSizing=true;text.fontSizeMin=16;text.fontSizeMax=22;}
+            if(selectionText!=null)
+            {
+                var bottom=selectionText.transform.parent as RectTransform;
+                if(bottom!=null){bottom.anchorMin=new Vector2(.02f,.02f);bottom.anchorMax=new Vector2(.98f,.15f);}
+                selectionText.enableAutoSizing=true;selectionText.fontSizeMin=15;selectionText.fontSizeMax=20;
+            }
+            if(feedbackText!=null)
+            {
+                feedbackText.rectTransform.anchorMin=new Vector2(.18f,.18f);feedbackText.rectTransform.anchorMax=new Vector2(.82f,.23f);
+                feedbackText.fontSize=18;
+            }
+        }
         private void CleanSelectedRoom()
         {
             if (!string.IsNullOrEmpty(_selectedRoomId))

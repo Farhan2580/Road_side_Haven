@@ -20,12 +20,15 @@ namespace RoadsideHaven
         [SerializeField] private Vector3 washCenter = new Vector3(55, 0, -24);
         [SerializeField] private Vector2 washHalfSize = new Vector2(3, 4);
         private OwnerSandboxController owner;
+        private OwnerLifeController life;
+        public void ConfigureLife(OwnerLifeController controller) => life = controller;
         public bool IsDriving => active >= 0;
         public void ConfigureOwner(OwnerSandboxController player) => owner = player;
         private int active = -1;
         private float throttle, turn, washProgress;
         private bool brake;
         private bool[] clean;
+        public string Status => status;
         private string status = "Explore the village and city. Choose CAR or CNG.";
         private bool forwardHeld, reverseHeld, leftHeld, rightHeld, brakeHeld;
         private ShopHUD shopHud;
@@ -65,6 +68,8 @@ namespace RoadsideHaven
             var keyboard = Keyboard.current;
             if (keyboard != null && keyboard.tabKey.wasPressedThisFrame)
                 SelectVehicle(active + 1 >= (vehicles == null ? 0 : vehicles.Length) ? -1 : active + 1);
+            if (keyboard != null && keyboard.rKey.wasPressedThisFrame) ResetActiveVehicle();
+            if ((GetComponentInParent<MotelGameRoot>()?.GetComponent<CompactGameHUD>()?.MenuOpen ?? false) || (life != null && life.PanelOpen)) { throttle=turn=0; brake=true; return; }
             throttle = (forwardHeld ? 1 : 0) - (reverseHeld ? 1 : 0);
             turn = (rightHeld ? 1 : 0) - (leftHeld ? 1 : 0);
             brake = brakeHeld;
@@ -88,8 +93,8 @@ namespace RoadsideHaven
             if (grounded)
             {
                 float input = Mathf.Clamp(throttle, -1, 1);
-                if ((input > 0 && speed < topSpeed) || (input < 0 && speed > -reverseSpeed))
-                    vehicle.AddForce(forward * input * acceleration, ForceMode.Acceleration);
+                if ((input > 0 && speed < topSpeed * (life == null ? 1 : life.VehicleMultiplier(active))) || (input < 0 && speed > -reverseSpeed))
+                    vehicle.AddForce(forward * input * acceleration * (life == null ? 1 : life.VehicleMultiplier(active)), ForceMode.Acceleration);
                 Vector3 sideways = vehicle.transform.right * Vector3.Dot(velocity, vehicle.transform.right);
                 vehicle.AddForce(-sideways * lateralGrip, ForceMode.Acceleration);
                 if (brake || Mathf.Abs(input) < .01f)
@@ -138,6 +143,7 @@ namespace RoadsideHaven
             if (owner != null && index >= 0 && (index >= vehicles.Length || !owner.CanEnter(vehicles[index])))
             { status = "Walk beside your vehicle and press F to enter."; return; }
             if (owner != null && active >= 0 && index < 0) { TryExitOwner(); return; }
+            if (index >= 0 && life != null && !life.Owns(index)) { status = "Buy this vehicle at the motel garage first (J)."; return; }
             if (index >= 0 && shopHud != null && shopHud.IsOpen)
             { status = "Close the shop panel before driving."; return; }
             if (active >= 0 && active < vehicles.Length && vehicles[active] != null)
@@ -148,7 +154,7 @@ namespace RoadsideHaven
             }
             active = index >= 0 && index < vehicles.Length ? index : -1;
             if (mapCamera != null) mapCamera.SetModalInputBlocked(active >= 0);
-            if (motelHud != null) motelHud.gameObject.SetActive(active < 0 && motelHudWasVisible);
+            if (motelHud != null && motelHudWasVisible) motelHud.gameObject.SetActive(true);
             washProgress = 0;
             forwardHeld = reverseHeld = leftHeld = rightHeld = brakeHeld = false;
             if (active >= 0 && vehicles[active] != null)
@@ -165,42 +171,43 @@ namespace RoadsideHaven
             }
         }
 
+        public void ResetActiveVehicle()
+        {
+            if(active<0 || vehicles==null)return;
+            if(active==2 && owner!=null && owner.HasSupplyCargo){status="Unload cargo before resetting the supply truck.";return;}
+            vehicles[active].position=startPositions[active];vehicles[active].rotation=startRotations[active];
+            vehicles[active].linearVelocity=Vector3.zero;vehicles[active].angularVelocity=Vector3.zero;
+        }
         private void OnGUI()
         {
-            // Prototype controls also accept touch. Coordinates use a fixed logical landscape width.
-            var previous = GUI.matrix;
-            float scale = Mathf.Max(.5f, Screen.width / 1280f);
-            GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1));
-            float height = Screen.height / scale;
-            GUI.Box(new Rect(18, 82, 670, 90), string.Empty);
-            GUI.Label(new Rect(28, 87, 650, 30), status);
-            if (GUI.Button(new Rect(28, 120, 105, 40), "DRIVE CAR")) SelectVehicle(0);
-            if (GUI.Button(new Rect(143, 120, 105, 40), "DRIVE CNG")) SelectVehicle(1);
-            if (GUI.Button(new Rect(258, 120, 105, 40), "MOTEL")) SelectVehicle(-1);
-            if (active >= 0)
-            {
-                forwardHeld = GUI.RepeatButton(new Rect(1120, height - 240, 120, 65), "ACCEL");
-                reverseHeld = GUI.RepeatButton(new Rect(1120, height - 165, 120, 65), "REVERSE");
-                leftHeld = GUI.RepeatButton(new Rect(25, height - 180, 100, 70), "LEFT");
-                rightHeld = GUI.RepeatButton(new Rect(135, height - 180, 100, 70), "RIGHT");
-                brakeHeld = GUI.RepeatButton(new Rect(990, height - 165, 110, 65), "BRAKE");
-                if (GUI.Button(new Rect(378, 120, 105, 40), "RESET") ||
-                    (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.R))
-                {
-                    vehicles[active].position = startPositions[active];
-                    vehicles[active].rotation = startRotations[active];
-                    vehicles[active].linearVelocity = Vector3.zero;
-                    vehicles[active].angularVelocity = Vector3.zero;
-                }
-            }
-            GUI.matrix = previous;
+            if(active<0 || Touchscreen.current==null)return;
+            if(GetComponentInParent<MotelGameRoot>()?.GetComponent<CompactGameHUD>()?.MenuOpen ?? false)return;
+            var previous=GUI.matrix;float scale=Mathf.Max(.5f,Screen.width/1280f);
+            GUI.matrix=Matrix4x4.Scale(new Vector3(scale,scale,1));float h=Screen.height/scale;
+            forwardHeld=GUI.RepeatButton(new Rect(1120,h-240,120,65),"ACCEL");
+            reverseHeld=GUI.RepeatButton(new Rect(1120,h-165,120,65),"REVERSE");
+            leftHeld=GUI.RepeatButton(new Rect(25,h-180,100,70),"LEFT");
+            rightHeld=GUI.RepeatButton(new Rect(135,h-180,100,70),"RIGHT");
+            brakeHeld=GUI.RepeatButton(new Rect(990,h-165,110,65),"BRAKE");GUI.matrix=previous;
         }
-
         private void OnDisable()
         {
             if (active >= 0) SelectVehicle(-1);
         }
 
+        public bool SupplyTruckNear(Vector3 point, float radius)
+        {
+            if (vehicles == null || vehicles.Length < 3 || vehicles[2] == null || life != null && !life.Owns(2)) return false;
+            return Vector2.Distance(new Vector2(point.x,point.z),new Vector2(vehicles[2].position.x,vehicles[2].position.z)) <= radius;
+        }
+        public void AppendSupplyTruck(Rigidbody truck)
+        {
+            if (vehicles == null || vehicles.Length != 2 || truck == null) return;
+            System.Array.Resize(ref vehicles,3); vehicles[2]=truck;
+            if (clean != null) System.Array.Resize(ref clean,3);
+            if (startPositions != null) { System.Array.Resize(ref startPositions,3); startPositions[2]=truck.position; }
+            if (startRotations != null) { System.Array.Resize(ref startRotations,3); startRotations[2]=truck.rotation; }
+        }
         public bool TryEnterOwner(Vector3 position, float radius)
         {
             if (vehicles == null || IsDriving) return false;

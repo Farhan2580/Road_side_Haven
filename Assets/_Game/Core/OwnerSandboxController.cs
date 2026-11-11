@@ -34,7 +34,11 @@ namespace RoadsideHaven
         private string message = "P: walk as owner | F: enter/exit nearby vehicle | G: interact";
         private Material skin, clothes;
         private bool touchUp, touchDown, touchLeft, touchRight;
+        public string Status => message;
+        public void ToggleWalking() { if (!driving.IsDriving) SetWalking(!walking); }
+        public void UseNearby() { if (walking) Interact(); }
         public bool IsWalking => walking;
+        public bool HasSupplyCargo => cargo;
 
         public void Configure(MotelGameRoot root, WorldDrivingController vehicles, IsometricCameraController camera)
         { motel = root; shop = root.GetComponent<ShopController>(); driving = vehicles; mapCamera = camera; }
@@ -78,6 +82,11 @@ namespace RoadsideHaven
             var shopView = motel == null ? null : motel.GetComponentInChildren<ShopHUD>(true);
             if (shopView != null && shopView.IsOpen) return;
             if (walking && mapCamera != null) mapCamera.SetModalInputBlocked(true);
+            var portalView = motel == null ? null : motel.GetComponentInChildren<MultiverseController>(true);
+            if (portalView != null && portalView.IsPortalPanelOpen) return;
+            var lifePanel = motel.GetComponentInChildren<OwnerLifeController>(true);
+            if (lifePanel != null && lifePanel.PanelOpen) return;
+            if (motel.GetComponent<CompactGameHUD>()?.MenuOpen ?? false) return;
             var keyboard = Keyboard.current;
             if (keyboard != null)
             {
@@ -128,7 +137,7 @@ namespace RoadsideHaven
         private bool Near(Vector3 point, float radius = -1)
         { var offset = transform.position - point; offset.y = 0; return offset.sqrMagnitude <= Mathf.Pow(radius < 0 ? interactionRadius : radius, 2); }
 
-        private void VehicleInteraction()
+        public void VehicleInteraction()
         {
             if (driving.IsDriving)
             {
@@ -140,8 +149,12 @@ namespace RoadsideHaven
         private void Interact()
         {
             if (motel == null || shop == null) return;
+            var dimension = motel.GetComponentInChildren<MultiverseController>(true);
+            if (dimension != null && dimension.Current != UniverseId.Normal && (Near(supplier) || Near(delivery)))
+            { message = "Return to Normal for physical shop supplies and delivery jobs. Use the portal market here."; return; }
             if (Near(supplier))
             {
+                if (!driving.SupplyTruckNear(supplier, 12)) { message = "Bring your owned supply truck to the supplier loading bay."; return; }
                 if (cargo) { message = "Cargo already loaded. Return to your shop."; return; }
                 if (!motel.TryDebit(cargoCost)) { message = "Not enough coins for supplies."; return; }
                 cargo = true;
@@ -151,9 +164,11 @@ namespace RoadsideHaven
             if (Near(delivery))
             {
                 if (!cargo) { var view = motel.GetComponentInChildren<ShopHUD>(true); if (view != null) view.Open(); message = "Shop checkout opened. Supplier is at (500, -230)."; return; }
+                if (!driving.SupplyTruckNear(delivery, 16)) { message = "Park the loaded supply truck beside your shop before unloading."; return; }
                 if (!shop.TryAcceptOwnerDelivery(cargoProduct, cargoQuantity)) { message = "Shelf full. Cargo retained; sell some stock first."; return; }
                 cargo = false;
                 motel.Credit(jobReward);
+                motel.GetComponentInChildren<OwnerLifeController>(true)?.Delivered();
                 message = $"Delivery complete. +{jobReward} coins!";
                 return;
             }
@@ -184,26 +199,15 @@ namespace RoadsideHaven
 
         private void OnGUI()
         {
-            var previous = GUI.matrix;
-            float scale = Mathf.Max(.5f, Screen.width / 1280f);
-            GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1));
-            GUI.Box(new Rect(18, 178, 820, 95), string.Empty);
-            GUI.Label(new Rect(28, 183, 800, 35), $"OWNER | {(motel == null ? 0 : motel.Coins)} coins | Cargo: {(cargo ? "Water crate" : "Empty")}\n{message}");
-            if (GUI.Button(new Rect(28, 225, 130, 38), walking ? "MANAGEMENT (P)" : "WALK (P)"))
-                if (!driving.IsDriving) SetWalking(!walking);
-            if (GUI.Button(new Rect(168, 225, 130, 38), "ENTER / EXIT (F)")) VehicleInteraction();
-            if (GUI.Button(new Rect(308, 225, 130, 38), "INTERACT (G)") && walking) Interact();
-            if (walking)
-            {
-                float h = Screen.height / scale;
-                touchUp = GUI.RepeatButton(new Rect(110, h - 225, 80, 55), "UP");
-                touchDown = GUI.RepeatButton(new Rect(110, h - 100, 80, 55), "DOWN");
-                touchLeft = GUI.RepeatButton(new Rect(20, h - 160, 80, 55), "LEFT");
-                touchRight = GUI.RepeatButton(new Rect(200, h - 160, 80, 55), "RIGHT");
-            }
-            GUI.matrix = previous;
+            if(!walking || Touchscreen.current == null || (motel.GetComponent<CompactGameHUD>()?.MenuOpen ?? false)) return;
+            var previous=GUI.matrix;float scale=Mathf.Max(.5f,Screen.width/1280f);
+            GUI.matrix=Matrix4x4.Scale(new Vector3(scale,scale,1));float h=Screen.height/scale;
+            touchUp=GUI.RepeatButton(new Rect(110,h-225,80,55),"UP");
+            touchDown=GUI.RepeatButton(new Rect(110,h-100,80,55),"DOWN");
+            touchLeft=GUI.RepeatButton(new Rect(20,h-160,80,55),"LEFT");
+            touchRight=GUI.RepeatButton(new Rect(200,h-160,80,55),"RIGHT");
+            GUI.matrix=previous;
         }
-
         private void OnDestroy()
         { if (skin != null) Destroy(skin); if (clothes != null) Destroy(clothes); }
     }

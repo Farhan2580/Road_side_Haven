@@ -111,6 +111,8 @@ namespace RoadsideHaven
         public int QueueSlot { get; set; } = -1;
         /// <summary>Arrival bay used again when this guest leaves; -1 uses the original exit.</summary>
         public int ParkingBay { get; set; } = -1;
+        public int BookedUniverse { get; set; }
+        public int BookedRoomRate { get; set; }
         public bool PaymentSettled { get; private set; }
 
         public GuestSession(string id, GuestState state)

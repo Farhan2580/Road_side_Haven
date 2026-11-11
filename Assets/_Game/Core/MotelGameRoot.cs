@@ -38,6 +38,10 @@ namespace RoadsideHaven
         private readonly List<GuestActor> _actors = new List<GuestActor>(8);
         private readonly HotelEventHub _events = new HotelEventHub();
         private Wallet _wallet;
+        private MultiverseController _multiverse;
+        public Wallet SessionWallet => _wallet;
+        public void BindMultiverse(MultiverseController controller) => _multiverse = controller;
+        public void ApplyUniverseWallet(Wallet wallet) { _wallet = wallet; PublishSnapshot(); }
         private string _selectedGuestId;
         private string _selectedRoomId;
         private int _nextGuestNumber = 1;
@@ -69,7 +73,7 @@ namespace RoadsideHaven
         {
             // Awake has created the shared wallet before optional scene modules are composed.
             if (enabled && _wallet != null && TryGetComponent<ShopController>(out var shop))
-                shop.Initialize(this, cameraController);
+                shop.Initialize(_wallet, cameraController);
         }
 
         private void Awake()
@@ -97,6 +101,7 @@ namespace RoadsideHaven
                 return;
             }
 
+            if (GetComponent<CompactGameHUD>() == null) gameObject.AddComponent<CompactGameHUD>();
             QualitySettings.vSyncCount = 0;
             _targetFrameRate = settings.TargetFrameRate;
             Application.targetFrameRate = _targetFrameRate;
@@ -123,7 +128,7 @@ namespace RoadsideHaven
             _arrivalTimer -= deltaTime;
             if (_arrivalTimer <= 0f)
             {
-                _arrivalTimer = settings.GuestArrivalInterval * (Time.time < _rivalAdvertisingPausedUntil ? .75f : 1f);
+                _arrivalTimer = settings.GuestArrivalInterval * (Time.time < _rivalAdvertisingPausedUntil ? .75f : 1f) * (GetComponentInChildren<OwnerLifeController>(true)?.ArrivalFactor ?? 1f);
                 TrySpawnGuest();
             }
 
@@ -180,7 +185,7 @@ namespace RoadsideHaven
 
         /// <summary>Fictional rival advertising outage briefly diverts more arrivals to this motel.</summary>
         public void PauseRivalAdvertising(float seconds)
-        { _rivalAdvertisingPausedUntil = Time.time + Mathf.Clamp(seconds, 0, 120); }
+        { _rivalAdvertisingPausedUntil = Time.time + Mathf.Clamp(seconds, 0, 120); GetComponentInChildren<OwnerLifeController>(true)?.ReportTrouble(); }
 
         public bool TryOwnerCheckIn(Vector3 ownerPosition, float radius)
         {
@@ -246,7 +251,7 @@ namespace RoadsideHaven
             GameObject body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             body.transform.SetParent(guestObject.transform, false);
             body.transform.localPosition = Vector3.up * 0.8f;
-            guestObject.name = $"Guest {guestId}";
+            guestObject.name = $"{(_multiverse == null ? "Guest" : _multiverse.CustomerType)} {guestId}";
             guestObject.transform.position = hit.position;
             body.transform.localScale = new Vector3(0.65f, 0.8f, 0.65f);
             if (guestMaterial != null)
@@ -263,6 +268,7 @@ namespace RoadsideHaven
             selectable.Configure(guestId);
             GuestActor actor = guestObject.AddComponent<GuestActor>();
             guestObject.GetComponent<ProceduralWalker>().ConfigureVisual(guestCharacterPrefab);
+            guestObject.GetComponent<ProceduralWalker>().ConfigureArchetype(_multiverse == null ? 0 : (int)_multiverse.Current);
             if (!agent.isOnNavMesh || !TrySetDestination(agent, queuePoints[queueSlot].position))
             {
                 Destroy(guestObject);
@@ -273,6 +279,8 @@ namespace RoadsideHaven
             {
                 QueueSlot = queueSlot,
                 ParkingBay = parkingBay,
+                BookedUniverse = _multiverse == null ? 0 : (int)_multiverse.Current,
+                BookedRoomRate = Mathf.Max(1, Mathf.RoundToInt(settings.RoomRate * (_multiverse == null ? 1f : _multiverse.RoomMultiplier))),
                 NavigationDeadline = Time.time + settings.NavigationTimeoutSeconds
             };
             _nextGuestNumber++;
@@ -335,9 +343,9 @@ namespace RoadsideHaven
                 if (guest.StayRemaining <= 0f)
                 {
                     HotelRoom room = FindRoom(guest.RoomId);
-                    if (room != null && room.TryCheckOut(guest, _wallet, settings.RoomRate))
+                    if (room != null && room.TryCheckOut(guest, _multiverse == null ? _wallet : _multiverse.WalletFor(guest.BookedUniverse), guest.BookedRoomRate > 0 ? guest.BookedRoomRate : settings.RoomRate))
                     {
-                        _events.Publish(new HotelFeedback($"Guest checked out. +{settings.RoomRate} coins; room is dirty."));
+                        _events.Publish(new HotelFeedback($"Guest checked out. +{(guest.BookedRoomRate > 0 ? guest.BookedRoomRate : settings.RoomRate)} {MultiverseLedger.Currency((UniverseId)guest.BookedUniverse)}; room is dirty."));
                         guest.RoomId = null;
                         BeginLeaving(guest, actor);
                         PublishSnapshot();
@@ -569,7 +577,8 @@ namespace RoadsideHaven
             HotelRoom selectedRoom = FindRoom(_selectedRoomId);
             _events.Publish(new HotelSnapshot(_wallet.Coins, occupied, _rooms.Count, waiting,
                 details, selectedRoom != null && selectedRoom.State == RoomState.Dirty, _selectedRoomId,
-                $"READY {available}  |  RESERVED {reserved}  |  DIRTY {dirty}  |  CLEANING {cleaning}"));
+                $"READY {available}  |  RESERVED {reserved}  |  DIRTY {dirty}  |  CLEANING {cleaning}",
+                _multiverse == null ? "Coins" : MultiverseLedger.Currency(_multiverse.Current)));
         }
 
         private HotelRoom FindRoom(string id)

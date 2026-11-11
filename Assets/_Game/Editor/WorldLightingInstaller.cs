@@ -7,12 +7,20 @@ namespace RoadsideHaven.Editor
 {
     public static partial class VisualPolishInstaller
     {
+        private static Bounds[] lightingRoadBounds;
         private static void InstallWorldLighting(Transform motel, IsometricCameraController camera)
         {
-            if (motel.Find("World Night Lighting v1") != null) return;
+            var old = motel.Find("World Night Lighting v1");
+            if (motel.Find("World Night Lighting v2") != null) return;
+            if (old != null) { old.gameObject.SetActive(false); if (Application.isPlaying) Object.Destroy(old.gameObject); else Undo.DestroyObjectImmediate(old.gameObject); }
             // Snapshot first so decorative poles do not get mistaken for buildings/roads.
             var geometry = motel.GetComponentsInChildren<MeshRenderer>(true);
-            var root = new GameObject("World Night Lighting v1").transform;
+            var roadBounds = geometry.Where(mesh => mesh.gameObject.activeInHierarchy && IsLightingRoad(mesh.name)).Select(mesh => mesh.bounds).ToArray();
+            lightingRoadBounds = roadBounds;
+            foreach (var legacy in geometry)
+                if ((legacy.name == "Roadside lamp pole" || legacy.name == "Roadside lamp head" || legacy.name == "Street lamp pole" || legacy.name == "Street lamp" || legacy.name == "Street lamp head") && InsideLightingRoad(legacy.bounds.center, roadBounds))
+                { if (!Application.isPlaying) Undo.RecordObject(legacy.gameObject, "Hide lamp inside road"); legacy.gameObject.SetActive(false); }
+            var root = new GameObject("World Night Lighting v2").transform;
             root.SetParent(motel, false);
             if (!Application.isPlaying) Undo.RegisterCreatedObjectUndo(root.gameObject, "Add world road building and garden lights");
             var glow = Material("Night fixture glass", new Color(1f, .82f, .52f), true);
@@ -24,8 +32,7 @@ namespace RoadsideHaven.Editor
                 if (!mesh.gameObject.activeInHierarchy) continue;
                 var bounds = mesh.bounds;
                 string name = mesh.name;
-                bool road = name == "Connected road" || name == "Road" || name == "Highway extension" ||
-                    name == "North avenue" || name == "Connecting avenue" || name == "Parking apron";
+                bool road = IsLightingRoad(name);
                 if (road)
                 {
                     bool horizontal = bounds.size.x >= bounds.size.z;
@@ -40,6 +47,7 @@ namespace RoadsideHaven.Editor
                         {
                             Vector3 position = bounds.center + (horizontal ? new Vector3(along, 0, side * (width * .5f + .8f)) : new Vector3(side * (width * .5f + .8f), 0, along));
                             position.y = 0;
+                            if (InsideLightingRoad(position, roadBounds)) continue;
                             var cell = new Vector2Int(Mathf.RoundToInt(position.x / 5), Mathf.RoundToInt(position.z / 5));
                             if (!occupied.Add(cell)) continue;
                             Fixture(root, position, width >= 10 ? 6 : 4, glow, points, surfaces, "Streetlight");
@@ -63,7 +71,7 @@ namespace RoadsideHaven.Editor
                 {
                     Vector3 position = new Vector3(bounds.center.x + 1, 0, bounds.center.z + 1);
                     var cell = new Vector2Int(Mathf.RoundToInt(position.x / 3), Mathf.RoundToInt(position.z / 3));
-                    if (occupied.Add(cell)) Fixture(root, position, .85f, glow, points, surfaces, "Garden bollard");
+                    if (!InsideLightingRoad(position, roadBounds) && occupied.Add(cell)) Fixture(root, position, .85f, glow, points, surfaces, "Garden bollard");
                 }
                 if (name == "Lamp shade" || name == "Street lamp" || name == "Street lamp head" || name == "Headlight")
                 {
@@ -85,9 +93,20 @@ namespace RoadsideHaven.Editor
             Debug.Log($"Night lighting installed: {points.Count} fixture positions, {surfaces.Count} glow surfaces. At most 20 nearby unshadowed lights are enabled at night.");
         }
 
+        private static bool IsLightingRoad(string name) => name == "Connected road" || name == "Road" || name == "Highway extension" ||
+            name == "North avenue" || name == "Connecting avenue" || name == "Parking apron";
+
+        private static bool InsideLightingRoad(Vector3 position, IEnumerable<Bounds> roads)
+        {
+            foreach(var bounds in roads)
+                if (position.x >= bounds.min.x - .65f && position.x <= bounds.max.x + .65f &&
+                    position.z >= bounds.min.z - .65f && position.z <= bounds.max.z + .65f) return true;
+            return false;
+        }
         private static void Fixture(Transform parent, Vector3 position, float height, Material glow,
             List<Transform> points, List<Renderer> surfaces, string name)
         {
+            if (InsideLightingRoad(position, lightingRoadBounds)) return;
             Box(parent, name + " post", position + Vector3.up * height * .5f, new Vector3(height > 3 ? .14f : .10f, height, .10f), ink);
             var bulb = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             bulb.name = name + " bulb"; bulb.transform.SetParent(parent, false);

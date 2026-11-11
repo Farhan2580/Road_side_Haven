@@ -14,6 +14,7 @@ namespace RoadsideHaven
         [SerializeField, Min(30)] private float dayLengthSeconds = 480f;
         [SerializeField, Range(0, 24)] private float startingHour = 15f;
         [SerializeField] private bool runCycle = true;
+        [SerializeField, Range(.1f,.95f), Tooltip("Real-time daylight share of a complete cycle. 0.8 means 80% day and 20% night.")] private float dayTimeFraction = .8f;
         [SerializeField] private WorldSeason startingSeason = WorldSeason.Summer;
         [SerializeField, Min(1)] private int daysPerSeason = 3;
         [Header("Lighting")]
@@ -148,8 +149,10 @@ namespace RoadsideHaven
             }
             if (runCycle)
             {
-                hour += Time.deltaTime * 24f / Mathf.Max(30, dayLengthSeconds);
-                while (hour >= 24f) { hour -= 24f; elapsedDays++; }
+                float seasonalDayHours = Season == WorldSeason.Summer ? 14f : Season == WorldSeason.Winter ? 10f : 12f;
+                hour = DayNightClock.Advance(hour, Time.deltaTime, dayLengthSeconds, seasonalDayHours, dayTimeFraction, out int passedDays);
+                elapsedDays += passedDays;
+
             }
             float daylightHours = Season == WorldSeason.Summer ? 14f : Season == WorldSeason.Winter ? 10f : 12f;
             float sunrise = 12f - daylightHours * .5f;
@@ -209,17 +212,6 @@ namespace RoadsideHaven
                 block.SetColor("_BaseColor", tint);
                 vegetation[i].SetPropertyBlock(block);
             }
-        }
-
-        private void OnGUI()
-        {
-            var previous = GUI.matrix;
-            float scale = Mathf.Max(.5f, Screen.width / 1280f);
-            GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1));
-            int minutes = Mathf.FloorToInt(hour * 60);
-            GUI.Box(new Rect(Screen.width / scale - 260, 82, 240, 60),
-                $"{Season} | Day {Day} | {minutes / 60:00}:{minutes % 60:00}\nF6 Sunset | F7 Night | F8 Season");
-            GUI.matrix = previous;
         }
 
         private void OnDisable()

@@ -42,6 +42,8 @@ namespace RoadsideHaven
         private float _previousPinchDistance;
         private bool _pinchBlockedByUi;
         private bool _modalInputBlocked;
+        private bool _overlayInputBlocked;
+        public void SetOverlayInputBlocked(bool blocked) { _overlayInputBlocked = blocked; if(blocked) CancelGesture(); }
         private bool _waitForPointerRelease;
 
         /// <summary>Modal panels cancel existing gestures and consume the closing tap before world input resumes.</summary>
@@ -75,7 +77,7 @@ namespace RoadsideHaven
 
         private void Update()
         {
-            if (Keyboard.current != null && Keyboard.current.f9Key.wasPressedThisFrame && !_modalInputBlocked)
+            if (Keyboard.current != null && Keyboard.current.f9Key.wasPressedThisFrame && !_modalInputBlocked && !_overlayInputBlocked)
             {
                 if (!_skylineView) _mapPitch = transform.eulerAngles.x;
                 _skylineView = !_skylineView;
@@ -84,7 +86,7 @@ namespace RoadsideHaven
                 transform.rotation = Quaternion.Euler(_skylineView ? 15f : _mapPitch, transform.eulerAngles.y, 0);
                 ApplyCameraPosition();
             }
-            if (_modalInputBlocked || _waitForPointerRelease)
+            if (_overlayInputBlocked || _modalInputBlocked || _waitForPointerRelease)
             {
                 CancelGesture();
                 bool pressed = Mouse.current != null && Mouse.current.leftButton.isPressed;

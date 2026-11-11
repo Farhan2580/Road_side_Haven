@@ -20,6 +20,8 @@ namespace RoadsideHaven
         private Material clothing;
         private Material skin;
         private Material dark;
+        private int archetype;
+        public void ConfigureArchetype(int value) => archetype = value;
         private Animator animator;
         private bool hasSpeedParameter;
         private float displayedSpeed;
@@ -65,12 +67,17 @@ namespace RoadsideHaven
                 new Color(.30f, .35f, .24f), new Color(.42f, .29f, .48f) };
             clothing = new Material(shader) { color = palette[Mathf.Abs(GetInstanceID() % palette.Length)] };
             skin = new Material(shader) { color = new Color(.72f, .48f, .32f) };
+            if (archetype == 1) { skin.color = new Color(.48f,.65f,.7f); clothing.color = new Color(.10f,.7f,.85f); }
+            if (archetype == 2) clothing.color = new Color(.35f,.32f,.20f);
+            if (archetype == 3) { skin.color = new Color(.78f,.72f,.56f); clothing.color = new Color(.23f,.58f,.32f); }
             dark = new Material(shader) { color = new Color(.10f, .08f, .07f) };
             foreach (var renderer in original) renderer.enabled = false;
             body = new GameObject("Animated character").transform;
             body.SetParent(transform, false);
             Part(body, "Torso", new Vector3(0, 1.02f, 0), new Vector3(.45f, .58f, .26f), clothing);
             Part(body, "Head", new Vector3(0, 1.52f, 0), new Vector3(.30f, .34f, .30f), skin);
+            if (archetype == 1) Part(body,"Robot antenna",new Vector3(0,1.88f,0),new Vector3(.06f,.28f,.06f),clothing);
+            if (archetype == 3) { Part(body,"Elf ear left",new Vector3(-.20f,1.57f,0),new Vector3(.18f,.08f,.08f),skin); Part(body,"Elf ear right",new Vector3(.20f,1.57f,0),new Vector3(.18f,.08f,.08f),skin); }
             Part(body, "Hair", new Vector3(0, 1.66f, -.025f), new Vector3(.32f, .14f, .30f), dark);
             Part(body, "Left eye", new Vector3(-.065f, 1.55f, .143f), new Vector3(.035f, .035f, .025f), dark);
             Part(body, "Right eye", new Vector3(.065f, 1.55f, .143f), new Vector3(.035f, .035f, .025f), dark);
