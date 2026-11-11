@@ -93,3 +93,27 @@ Validation for this update: Runtime, Editor, and Tests projects build with the l
 All scripts were compiled together using the installed Unity Editor's Roslyn compiler and its existing project assembly references. The three NUnit test methods passed when invoked directly outside Unity. This does not validate Unity assembly import, serialization, scene generation, the actual NavMesh bake, Play Mode, or Android behavior. The project was locked by the running Editor, so no second Editor was started and Unity Test Runner/device tests remain to be run using the steps above.
 
 The prototype resets on Play; there is no persistence, staff, loans, or shop interaction. Guests and buildings use primitives. Room state is shown in the selection panel; there is no full room management dashboard. Cleaning is free. Camera framing, safe area, agent avoidance, TMP readability, and A53 performance need visual/device validation. Regenerating intentionally replaces the generated scene; preserve custom scenes elsewhere.
+
+## Play as the motel owner
+
+The visual installer now adds an `Owner Activities` layer with a local owner character, industrial supplier and rival sign. Apply the visual upgrade outside Play Mode and save to include it in a build; the Editor Play preview installs it automatically.
+
+- **P / WALK** toggles walking and management. On foot use camera-relative **WASD**, hold **Shift** to run, or use the prototype directional buttons.
+- **F / ENTER-EXIT** enters a nearby car/CNG. Vehicle buttons also require the owner to be close; switching remotely between vehicles is blocked. Stop first before exiting. The controller checks for clear ground beside the vehicle before placing the owner there.
+- **G / INTERACT** near reception assigns a waiting guest to a reachable available room. Near a dirty room it starts existing timed cleaning. At the shop delivery marker `(7, -8)` it unloads cargo or opens the scanning/checkout UI. Movement pauses while shop checkout is open.
+- At the industrial supplier `(500, -230)`, interact on foot to buy a four-unit water crate for eight coins. Carry it back, including while driving, and deliver it to the shop. Delivery increases stock and pays 20 coins. Full shelves reject the delivery without discarding cargo or charging again. This repeatable supplier trip is the first extra-income mission loop; it is not a story mission system.
+- At the fictional rival sign `(180, 710)`, interact to disable its advertising for 45 seconds. Your guest arrival attempts become 25% more frequent during that time, within the existing queue/guest caps. A 120-second cooldown prevents immediate repetition. This is a sign prank and temporary simulation modifier; there is no destructive gameplay or rival NPC simulation.
+
+The owner uses a primitive articulated mesh, CharacterController collision and procedural walking, not a rigged animation asset. Night exploration uses the existing lighting cycle. Owner/cargo/mission state resets on Play; save/load and multiplayer remain absent. Existing management UI is retained as an optional mode.
+
+Validation: Runtime and Editor source compilation passes. Seven inventory checks were executed directly against the project shop model sources; they verify delivery acceptance, reserved capacity, invalid/full delivery rejection, unchanged state and no second debit. An NUnit regression test was also added. Unity Play Mode, vehicle entry/exit clearances, touch controls, on-foot navigation and mission interaction still require interactive validation.
+
+## World road, building and garden night lighting
+
+`World Night Lighting v1` adds lamp fixtures along both sides of generated roads, with 30-meter spacing on highways and 22-meter spacing on smaller roads. Junction fixtures are deduplicated approximately. Building entrances receive warm lanterns; facade/house/room windows receive night emission. Garden bollards are placed near trees, planters, motel rooms and courtyard paths. Fixtures have no colliders, preserving pedestrian paths and driving routes.
+
+`WorldNightLighting` uses the atmosphere clock: lighting fades in during the evening and out after dawn. Distant bulbs and windows glow across the map, but actual illumination uses a fixed pool of at most 20 nearby unshadowed point lights within 85 meters of the current camera focus. Camera focus follows the owner or vehicle during exploration. URP's active additional-light settings can further limit the lights affecting an individual surface. Tune light budget, radius, intensity, range and emission on the controller. This is distance-prioritized real-time illumination, not a fully baked lighting solution for every surface of the 4 km2 world.
+
+Open the prototype after script compilation, then use **Apply Visual Upgrade**, save, and press Play. Press **F7** to preview night. Existing generated scenes receive the additive lighting layer automatically in the Editor Play preview. Runtime materials are cloned and restored on disable; shared project material assets are not changed by the day/night fade. Delete only the generated lighting layer and reapply to regenerate fixtures after custom layout changes.
+
+Validation: Runtime and Editor C# sources compile with zero warnings/errors. Night exposure, light placement, shader bloom, URP additional-light limits and target-device frame rate still require Unity Play Mode/device verification. These changes have not been pushed to GitHub.

@@ -244,6 +244,15 @@ namespace RoadsideHaven
             finally { transactionInProgress = false; }
         }
 
+        /// <summary>Accepts already purchased owner cargo atomically; reservations still consume capacity.</summary>
+        public bool TryAcceptDelivery(string productId, int quantity)
+        {
+            if (transactionInProgress || quantity <= 0 || productId == null ||
+                !stockById.TryGetValue(productId, out var stock) ||
+                quantity > stock.Product.ShelfCapacity - stock.TotalOwned) return false;
+            stock.Available += quantity;
+            return true;
+        }
         private bool Owns(ShopBasket basket) => basket != null &&
             activeBaskets.TryGetValue(basket.Id, out ShopBasket owned) && ReferenceEquals(owned, basket);
     }

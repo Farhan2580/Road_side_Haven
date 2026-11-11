@@ -351,6 +351,12 @@ namespace RoadsideHaven
             return true;
         }
 
+        public bool TryAcceptOwnerDelivery(string productId, int quantity)
+        {
+            if (!running || ledger == null || !ledger.TryAcceptDelivery(productId, quantity)) return false;
+            Publish();
+            return true;
+        }
         public bool TryRestock(RestockQuote quote)
         {
             if (!ledger.TryRestock(quote))

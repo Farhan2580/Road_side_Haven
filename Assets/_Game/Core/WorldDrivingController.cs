@@ -19,6 +19,9 @@ namespace RoadsideHaven
         [SerializeField, Min(1)] private float washSeconds = 5f;
         [SerializeField] private Vector3 washCenter = new Vector3(55, 0, -24);
         [SerializeField] private Vector2 washHalfSize = new Vector2(3, 4);
+        private OwnerSandboxController owner;
+        public bool IsDriving => active >= 0;
+        public void ConfigureOwner(OwnerSandboxController player) => owner = player;
         private int active = -1;
         private float throttle, turn, washProgress;
         private bool brake;
@@ -40,6 +43,7 @@ namespace RoadsideHaven
 
         private void Start()
         {
+            owner = GetComponentInParent<MotelGameRoot>()?.GetComponentInChildren<OwnerSandboxController>(true);
             shopHud = GetComponentInParent<MotelGameRoot>()?.GetComponentInChildren<ShopHUD>(true);
             motelHud = GetComponentInParent<MotelGameRoot>()?.GetComponentInChildren<MotelHUD>(true);
             motelHudWasVisible = motelHud != null && motelHud.gameObject.activeSelf;
@@ -131,6 +135,9 @@ namespace RoadsideHaven
         private void SelectVehicle(int index)
         {
             if (vehicles == null) return;
+            if (owner != null && index >= 0 && (index >= vehicles.Length || !owner.CanEnter(vehicles[index])))
+            { status = "Walk beside your vehicle and press F to enter."; return; }
+            if (owner != null && active >= 0 && index < 0) { TryExitOwner(); return; }
             if (index >= 0 && shopHud != null && shopHud.IsOpen)
             { status = "Close the shop panel before driving."; return; }
             if (active >= 0 && active < vehicles.Length && vehicles[active] != null)
@@ -146,6 +153,8 @@ namespace RoadsideHaven
             forwardHeld = reverseHeld = leftHeld = rightHeld = brakeHeld = false;
             if (active >= 0 && vehicles[active] != null)
             {
+                if (owner != null) owner.EnteredVehicle();
+                if (mapCamera != null) mapCamera.SetModalInputBlocked(true);
                 vehicles[active].isKinematic = false;
                 status = "WASD / arrows: drive | SPACE: brake | TAB: switch | R: reset";
             }
@@ -192,6 +201,36 @@ namespace RoadsideHaven
             if (active >= 0) SelectVehicle(-1);
         }
 
+        public bool TryEnterOwner(Vector3 position, float radius)
+        {
+            if (vehicles == null || IsDriving) return false;
+            for (int i = 0; i < vehicles.Length; i++)
+                if (vehicles[i] != null && Vector3.Distance(position, vehicles[i].position) <= radius)
+                { SelectVehicle(i); return IsDriving; }
+            return false;
+        }
+
+        public bool TryExitOwner()
+        {
+            if (!IsDriving || owner == null || vehicles[active] == null) return false;
+            var vehicle = vehicles[active];
+            if (vehicle.linearVelocity.magnitude > 1) return false;
+            for (int side = -1; side <= 1; side += 2)
+            {
+                var point = vehicle.position + vehicle.transform.right * side * 2.5f;
+                if (!Physics.Raycast(point + Vector3.up * 3, Vector3.down, out var ground, 8, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)) continue;
+                point = ground.point + Vector3.up * .1f;
+                if (Physics.CheckCapsule(point + Vector3.up * .4f, point + Vector3.up * 1.5f, .32f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)) continue;
+                vehicle.linearVelocity = Vector3.zero; vehicle.angularVelocity = Vector3.zero; vehicle.isKinematic = true;
+                active = -1;
+                var spray = transform.Find("Car Wash Spray"); if (spray != null) spray.gameObject.SetActive(false);
+                if (motelHud != null) motelHud.gameObject.SetActive(motelHudWasVisible);
+                owner.ExitVehicle(point);
+                status = "On foot. F: enter nearby vehicle | G: work / interact";
+                return true;
+            }
+            return false;
+        }
         private void PaintCleanliness(int index, bool washed)
         {
             foreach (var renderer in vehicles[index].GetComponentsInChildren<Renderer>())

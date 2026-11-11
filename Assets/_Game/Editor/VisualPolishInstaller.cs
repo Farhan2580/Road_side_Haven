@@ -166,7 +166,8 @@ namespace RoadsideHaven.Editor
                 controller.Configure(Vector3.zero, new Vector2(112, 82), new Vector2(6, 105));
             InstallVillageCity(motel, controller);
             InstallRegionalWorld(motel, controller);
-            if (motel.Find("Expanded District v1") != null) return;
+            InstallOwnerActivities(motel, controller);
+            if (motel.Find("Expanded District v1") != null) { InstallWorldLighting(motel, controller); return; }
             var district = new GameObject("Expanded District v1").transform;
             district.SetParent(motel, false);
             if (!Application.isPlaying) Undo.RegisterCreatedObjectUndo(district.gameObject, "Expand roadside district");
@@ -230,6 +231,7 @@ namespace RoadsideHaven.Editor
                     new Vector3(-33, .15f, 28), new Vector3(-33, .15f, -14)
                 }, 4.5f);
             }
+            InstallWorldLighting(motel, controller);
         }
 
         private static void InstallParkingArrivals(MotelGameRoot motel)

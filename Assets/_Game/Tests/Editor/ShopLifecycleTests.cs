@@ -5,6 +5,22 @@ namespace RoadsideHaven.Tests
 {
     public sealed class ShopLifecycleTests
     {
+        [Test]
+        public void OwnerDeliveryPreservesReservedCapacityAndDoesNotChargeAgain()
+        {
+            var wallet = new Wallet(20);
+            var ledger = new ShopLedger(new[] { Water(2, 4) }, wallet);
+            var basket = ledger.CreateBasket("delivery-capacity");
+            Assert.IsTrue(ledger.TryReserve(basket, "water"));
+            Assert.IsTrue(ledger.TryAcceptDelivery("water", 2));
+            Assert.AreEqual(3, ledger.Stocks[0].Available);
+            Assert.AreEqual(1, ledger.Stocks[0].Reserved);
+            Assert.IsFalse(ledger.TryAcceptDelivery("water", 1));
+            Assert.IsFalse(ledger.TryAcceptDelivery("water", -1));
+            Assert.IsFalse(ledger.TryAcceptDelivery("unknown", 1));
+            Assert.AreEqual(4, ledger.Stocks[0].TotalOwned);
+            Assert.AreEqual(20, wallet.Coins);
+        }
         private static ShopProduct Water(int stock = 2, int capacity = 4) =>
             new ShopProduct("water", "Water", 3, 7, capacity, stock, 2);
 

@@ -45,6 +45,7 @@ namespace RoadsideHaven
         private float _snapshotTimer;
         private int _targetFrameRate;
         private int _nextParkingBay;
+        private float _rivalAdvertisingPausedUntil;
 
         public int Coins => _wallet == null ? 0 : _wallet.Coins;
         public bool HasParkingArrivals => parkingArrivalPoints != null && parkingArrivalPoints.Length > 0;
@@ -122,7 +123,7 @@ namespace RoadsideHaven
             _arrivalTimer -= deltaTime;
             if (_arrivalTimer <= 0f)
             {
-                _arrivalTimer = settings.GuestArrivalInterval;
+                _arrivalTimer = settings.GuestArrivalInterval * (Time.time < _rivalAdvertisingPausedUntil ? .75f : 1f);
                 TrySpawnGuest();
             }
 
@@ -177,6 +178,33 @@ namespace RoadsideHaven
             return true;
         }
 
+        /// <summary>Fictional rival advertising outage briefly diverts more arrivals to this motel.</summary>
+        public void PauseRivalAdvertising(float seconds)
+        { _rivalAdvertisingPausedUntil = Time.time + Mathf.Clamp(seconds, 0, 120); }
+
+        public bool TryOwnerCheckIn(Vector3 ownerPosition, float radius)
+        {
+            for (int guestIndex = 0; guestIndex < _guests.Count; guestIndex++)
+            {
+                if (_guests[guestIndex].State != GuestState.Waiting || _actors[guestIndex] == null ||
+                    Vector3.Distance(ownerPosition, _actors[guestIndex].transform.position) > radius) continue;
+                for (int roomIndex = 0; roomIndex < _rooms.Count; roomIndex++)
+                    if (_rooms[roomIndex].State == RoomState.Available &&
+                        TryAssignGuestToRoom(_guests[guestIndex].Id, _rooms[roomIndex].Id)) return true;
+            }
+            return false;
+        }
+        public bool TryOwnerCleanNearest(Vector3 ownerPosition, float radius)
+        {
+            for (int i = 0; i < _rooms.Count; i++)
+            {
+                var entry = _roomViews[i].EntryPoint;
+                if (_rooms[i].State == RoomState.Dirty && entry != null &&
+                    Vector3.Distance(ownerPosition, entry.position) <= radius)
+                    return TryBeginCleaning(_rooms[i].Id);
+            }
+            return false;
+        }
         public bool TryBeginCleaning(string roomId)
         {
             HotelRoom room = FindRoom(roomId);

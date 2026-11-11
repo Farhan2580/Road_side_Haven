@@ -27,6 +27,7 @@ namespace RoadsideHaven
         [Tooltip("Distance along the view axis; keeps the expanded district in front of the near clip plane when zoomed out.")]
         [SerializeField, Min(60f)] private float viewDistance = 100f;
 
+        public Vector3 FocusPoint => focusPoint;
         private Camera _camera;
         private bool _skylineView;
         private float _mapPitch;
