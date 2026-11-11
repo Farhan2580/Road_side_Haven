@@ -23,6 +23,7 @@ namespace RoadsideHaven
         private OwnerLifeController life;
         public void ConfigureLife(OwnerLifeController controller) => life = controller;
         public bool IsDriving => active >= 0;
+        public Transform ActiveVehicleTransform => active>=0 && vehicles!=null && active<vehicles.Length && vehicles[active]!=null ? vehicles[active].transform : null;
         public void ConfigureOwner(OwnerSandboxController player) => owner = player;
         private int active = -1;
         private float throttle, turn, washProgress;
@@ -30,7 +31,7 @@ namespace RoadsideHaven
         private bool[] clean;
         public string Status => status;
         private string status = "Explore the village and city. Choose CAR or CNG.";
-        private bool forwardHeld, reverseHeld, leftHeld, rightHeld, brakeHeld;
+        private PcThirdPersonCamera pcCamera;
         private ShopHUD shopHud;
         private MotelHUD motelHud;
         private bool motelHudWasVisible;
@@ -70,9 +71,11 @@ namespace RoadsideHaven
                 SelectVehicle(active + 1 >= (vehicles == null ? 0 : vehicles.Length) ? -1 : active + 1);
             if (keyboard != null && keyboard.rKey.wasPressedThisFrame) ResetActiveVehicle();
             if ((GetComponentInParent<MotelGameRoot>()?.GetComponent<CompactGameHUD>()?.MenuOpen ?? false) || (life != null && life.PanelOpen)) { throttle=turn=0; brake=true; return; }
-            throttle = (forwardHeld ? 1 : 0) - (reverseHeld ? 1 : 0);
-            turn = (rightHeld ? 1 : 0) - (leftHeld ? 1 : 0);
-            brake = brakeHeld;
+            if(pcCamera==null && Camera.main!=null)pcCamera=Camera.main.GetComponent<PcThirdPersonCamera>();
+            if(pcCamera!=null&&pcCamera.InputBlocked){throttle=turn=0;brake=true;return;}
+            throttle = 0;
+            turn = 0;
+            brake = false;
             if (active < 0 || keyboard == null) return;
             throttle += (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed ? 1 : 0) -
                 (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed ? 1 : 0);
@@ -156,7 +159,7 @@ namespace RoadsideHaven
             if (mapCamera != null) mapCamera.SetModalInputBlocked(active >= 0);
             if (motelHud != null && motelHudWasVisible) motelHud.gameObject.SetActive(true);
             washProgress = 0;
-            forwardHeld = reverseHeld = leftHeld = rightHeld = brakeHeld = false;
+            throttle=turn=0; brake=false;
             if (active >= 0 && vehicles[active] != null)
             {
                 if (owner != null) owner.EnteredVehicle();
@@ -177,18 +180,6 @@ namespace RoadsideHaven
             if(active==2 && owner!=null && owner.HasSupplyCargo){status="Unload cargo before resetting the supply truck.";return;}
             vehicles[active].position=startPositions[active];vehicles[active].rotation=startRotations[active];
             vehicles[active].linearVelocity=Vector3.zero;vehicles[active].angularVelocity=Vector3.zero;
-        }
-        private void OnGUI()
-        {
-            if(active<0 || Touchscreen.current==null)return;
-            if(GetComponentInParent<MotelGameRoot>()?.GetComponent<CompactGameHUD>()?.MenuOpen ?? false)return;
-            var previous=GUI.matrix;float scale=Mathf.Max(.5f,Screen.width/1280f);
-            GUI.matrix=Matrix4x4.Scale(new Vector3(scale,scale,1));float h=Screen.height/scale;
-            forwardHeld=GUI.RepeatButton(new Rect(1120,h-240,120,65),"ACCEL");
-            reverseHeld=GUI.RepeatButton(new Rect(1120,h-165,120,65),"REVERSE");
-            leftHeld=GUI.RepeatButton(new Rect(25,h-180,100,70),"LEFT");
-            rightHeld=GUI.RepeatButton(new Rect(135,h-180,100,70),"RIGHT");
-            brakeHeld=GUI.RepeatButton(new Rect(990,h-165,110,65),"BRAKE");GUI.matrix=previous;
         }
         private void OnDisable()
         {

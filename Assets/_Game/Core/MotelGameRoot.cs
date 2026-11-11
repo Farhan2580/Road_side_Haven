@@ -101,9 +101,10 @@ namespace RoadsideHaven
                 return;
             }
 
+            if (GetComponent<WorldSignboards>() == null) gameObject.AddComponent<WorldSignboards>();
             if (GetComponent<CompactGameHUD>() == null) gameObject.AddComponent<CompactGameHUD>();
             QualitySettings.vSyncCount = 0;
-            _targetFrameRate = settings.TargetFrameRate;
+            _targetFrameRate = Application.isMobilePlatform ? settings.TargetFrameRate : settings.DesktopFrameRate;
             Application.targetFrameRate = _targetFrameRate;
             if (hud == null)
                 hud = GetComponentInChildren<MotelHUD>(true);

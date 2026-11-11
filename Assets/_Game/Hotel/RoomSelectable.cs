@@ -27,9 +27,9 @@ namespace RoadsideHaven
                 status += $" {Mathf.CeilToInt(Mathf.Max(0f, stayRemaining))}s";
             _statusLabel.text = $"{(selected ? "> " : string.Empty)}{room.Id}\n<size=55%>{status}</size>";
             _statusLabel.color = selected ? new Color(1f, .55f, .12f) :
-                room.State == RoomState.Available ? new Color(.08f, .38f, .24f) :
-                room.State == RoomState.Dirty ? new Color(.65f, .18f, .10f) :
-                new Color(.12f, .19f, .30f);
+                room.State == RoomState.Available ? new Color(.45f, .93f, .66f) :
+                room.State == RoomState.Dirty ? new Color(1f, .5f, .3f) :
+                new Color(.75f, .85f, 1f);
         }
 
         public void Configure(string id, Transform roomEntry)

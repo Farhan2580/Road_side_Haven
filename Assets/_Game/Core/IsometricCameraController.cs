@@ -43,6 +43,8 @@ namespace RoadsideHaven
         private bool _pinchBlockedByUi;
         private bool _modalInputBlocked;
         private bool _overlayInputBlocked;
+        private bool _externalView;
+        public void SetExternalView(bool active) { _externalView=active; if(active)CancelGesture(); }
         public void SetOverlayInputBlocked(bool blocked) { _overlayInputBlocked = blocked; if(blocked) CancelGesture(); }
         private bool _waitForPointerRelease;
 
@@ -77,6 +79,7 @@ namespace RoadsideHaven
 
         private void Update()
         {
+            if (_externalView) return;
             if (Keyboard.current != null && Keyboard.current.f9Key.wasPressedThisFrame && !_modalInputBlocked && !_overlayInputBlocked)
             {
                 if (!_skylineView) _mapPitch = transform.eulerAngles.x;
@@ -289,6 +292,7 @@ namespace RoadsideHaven
 
         private void ApplyCameraPosition()
         {
+            if (_externalView) return;
             if (_camera == null)
                 return;
             Vector3 direction = transform.rotation * Vector3.forward;

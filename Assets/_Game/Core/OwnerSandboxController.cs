@@ -15,6 +15,8 @@ namespace RoadsideHaven
         [Header("Movement")]
         [SerializeField, Min(1)] private float walkSpeed = 4f;
         [SerializeField, Min(1)] private float runSpeed = 7f;
+        [SerializeField, Min(1)] private float movementAcceleration = 14f;
+        private Vector3 planarVelocity;
         [SerializeField, Min(1)] private float interactionRadius = 4f;
         [Header("Supplier job")]
         [SerializeField] private Vector3 supplier = new Vector3(500, 0, -230);
@@ -33,7 +35,8 @@ namespace RoadsideHaven
         private bool walking, cargo;
         private string message = "P: walk as owner | F: enter/exit nearby vehicle | G: interact";
         private Material skin, clothes;
-        private bool touchUp, touchDown, touchLeft, touchRight;
+        private PcThirdPersonCamera pcCamera;
+        [SerializeField,Min(.1f)] private float jumpHeight=1.1f;
         public string Status => message;
         public void ToggleWalking() { if (!driving.IsDriving) SetWalking(!walking); }
         public void UseNearby() { if (walking) Interact(); }
@@ -46,6 +49,8 @@ namespace RoadsideHaven
         private void Start()
         {
             character = GetComponent<CharacterController>();
+            if(Vector2.Distance(new Vector2(transform.position.x,transform.position.z),new Vector2(-5,-6))<.5f)
+            { character.enabled=false;transform.position=new Vector3(-1.8f,.2f,-5.8f);character.enabled=true; }
             visual = new GameObject("Owner visual").transform;
             visual.SetParent(transform, false);
             var shader = Shader.Find("Universal Render Pipeline/Lit");
@@ -64,7 +69,8 @@ namespace RoadsideHaven
                     Part(limbs[i], "Limb mesh", Vector3.down * .3f, new Vector3(.15f, .6f, .15f), i < 2 ? skin : clothes);
                 }
             }
-            SetWalking(false);
+            if (mapCamera != null) { pcCamera=mapCamera.GetComponent<PcThirdPersonCamera>(); if(pcCamera==null)pcCamera=mapCamera.gameObject.AddComponent<PcThirdPersonCamera>(); pcCamera.Configure(motel,this,driving,mapCamera); }
+            SetWalking(true);
         }
 
         private static void Part(Transform parent, string name, Vector3 position, Vector3 scale, Material material)
@@ -80,34 +86,38 @@ namespace RoadsideHaven
         private void Update()
         {
             var shopView = motel == null ? null : motel.GetComponentInChildren<ShopHUD>(true);
-            if (shopView != null && shopView.IsOpen) return;
+            if (shopView != null && shopView.IsOpen) { planarVelocity=Vector3.zero; return; }
             if (walking && mapCamera != null) mapCamera.SetModalInputBlocked(true);
             var portalView = motel == null ? null : motel.GetComponentInChildren<MultiverseController>(true);
-            if (portalView != null && portalView.IsPortalPanelOpen) return;
+            if (portalView != null && portalView.IsPortalPanelOpen) { planarVelocity=Vector3.zero; return; }
             var lifePanel = motel.GetComponentInChildren<OwnerLifeController>(true);
-            if (lifePanel != null && lifePanel.PanelOpen) return;
-            if (motel.GetComponent<CompactGameHUD>()?.MenuOpen ?? false) return;
+            if (lifePanel != null && lifePanel.PanelOpen) { planarVelocity=Vector3.zero; return; }
+            if (motel.GetComponent<CompactGameHUD>()?.MenuOpen ?? false) { planarVelocity=Vector3.zero; return; }
             var keyboard = Keyboard.current;
             if (keyboard != null)
             {
-                if (keyboard.pKey.wasPressedThisFrame && !driving.IsDriving) SetWalking(!walking);
+                if ((keyboard.pKey.wasPressedThisFrame || keyboard.mKey.wasPressedThisFrame) && !driving.IsDriving) SetWalking(!walking);
                 if (keyboard.fKey.wasPressedThisFrame) VehicleInteraction();
                 if (keyboard.gKey.wasPressedThisFrame && walking) Interact();
             }
             if (!walking) return;
-            float x = (touchRight ? 1 : 0) - (touchLeft ? 1 : 0);
-            float z = (touchUp ? 1 : 0) - (touchDown ? 1 : 0);
+            if(pcCamera!=null&&pcCamera.InputBlocked)return;
+            float x = 0;
+            float z = 0;
             if (keyboard != null)
             {
-                x += (keyboard.dKey.isPressed ? 1 : 0) - (keyboard.aKey.isPressed ? 1 : 0);
-                z += (keyboard.wKey.isPressed ? 1 : 0) - (keyboard.sKey.isPressed ? 1 : 0);
+                x += (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed ? 1 : 0) - (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed ? 1 : 0);
+                z += (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed ? 1 : 0) - (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed ? 1 : 0);
             }
             Vector3 forward = mapCamera == null ? Vector3.forward : Vector3.ProjectOnPlane(mapCamera.transform.forward, Vector3.up).normalized;
             Vector3 right = Vector3.Cross(Vector3.up, forward);
             Vector3 move = Vector3.ClampMagnitude(right * x + forward * z, 1);
             float speed = keyboard != null && keyboard.leftShiftKey.isPressed ? runSpeed : walkSpeed;
-            fallSpeed = character.isGrounded ? -2f : Mathf.Max(-35f, fallSpeed - 20f * Time.deltaTime);
-            character.Move((move * speed + Vector3.up * fallSpeed) * Time.deltaTime);
+            if(character.isGrounded && fallSpeed<0)fallSpeed=-2f;
+            if(character.isGrounded && keyboard!=null && keyboard.spaceKey.wasPressedThisFrame)fallSpeed=Mathf.Sqrt(40f*jumpHeight);
+            fallSpeed=Mathf.Max(-35f,fallSpeed-20f*Time.deltaTime);
+            planarVelocity=Vector3.MoveTowards(planarVelocity,move*speed,movementAcceleration*Time.deltaTime);
+            character.Move((planarVelocity + Vector3.up * fallSpeed) * Time.deltaTime);
             if (move.sqrMagnitude > .01f) visual.rotation = Quaternion.Slerp(visual.rotation, Quaternion.LookRotation(move), Time.deltaTime * 12);
             gait += move.magnitude * speed * Time.deltaTime * 5;
             if (limbs != null)
@@ -131,7 +141,7 @@ namespace RoadsideHaven
             if (character != null) character.enabled = enabled;
             if (visual != null) visual.gameObject.SetActive(enabled);
             if (mapCamera != null) mapCamera.SetModalInputBlocked(enabled);
-            touchUp = touchDown = touchLeft = touchRight = false;
+            fallSpeed=0;planarVelocity=Vector3.zero;
         }
 
         private bool Near(Vector3 point, float radius = -1)
@@ -197,17 +207,6 @@ namespace RoadsideHaven
             }
         }
 
-        private void OnGUI()
-        {
-            if(!walking || Touchscreen.current == null || (motel.GetComponent<CompactGameHUD>()?.MenuOpen ?? false)) return;
-            var previous=GUI.matrix;float scale=Mathf.Max(.5f,Screen.width/1280f);
-            GUI.matrix=Matrix4x4.Scale(new Vector3(scale,scale,1));float h=Screen.height/scale;
-            touchUp=GUI.RepeatButton(new Rect(110,h-225,80,55),"UP");
-            touchDown=GUI.RepeatButton(new Rect(110,h-100,80,55),"DOWN");
-            touchLeft=GUI.RepeatButton(new Rect(20,h-160,80,55),"LEFT");
-            touchRight=GUI.RepeatButton(new Rect(200,h-160,80,55),"RIGHT");
-            GUI.matrix=previous;
-        }
         private void OnDestroy()
         { if (skin != null) Destroy(skin); if (clothes != null) Destroy(clothes); }
     }

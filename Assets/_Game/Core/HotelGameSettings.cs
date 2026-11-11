@@ -30,6 +30,9 @@ namespace RoadsideHaven
         [Tooltip("Requested frame rate for the mobile prototype.")]
         [SerializeField, Range(15, 60)] private int targetFrameRate = 30;
 
+        [Tooltip("Desktop frame-rate target for the PC/laptop build.")]
+        [SerializeField, Range(30, 240)] private int desktopFrameRate = 60;
+        public int DesktopFrameRate => desktopFrameRate;
         public int StartingCoins => startingCoins;
         public int RoomRate => roomRate;
         public int MaximumGuests => maximumGuests;

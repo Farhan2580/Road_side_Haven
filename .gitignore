@@ -49,3 +49,7 @@ Thumbs.db
 *.unitypackage
 
 # Assets, their .meta files, Packages and ProjectSettings must be committed.
+
+# Unity scene recovery backups
+/Assets/_Recovery/
+/Assets/_Recovery.meta
