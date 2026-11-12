@@ -67,24 +67,24 @@ namespace RoadsideHaven
             if(!activeView)
             {
                 mapRotation=transform.rotation;mapSize=lens.orthographicSize;activeView=true;released=false;
-                yaw=target.eulerAngles.y;pitch=18;distance=driving.IsDriving?9:4.5f;
+                yaw=driving.IsDriving?driving.ActiveVehicleYaw:target.eulerAngles.y;pitch=18;distance=driving.IsDriving?driving.ActiveVehicleCameraDistance:4.5f;
             }
             map.SetExternalView(true);lens.orthographic=false;lens.fieldOfView=fieldOfView;lens.nearClipPlane=.08f;
             bool blocked=LookBlocked;
             Cursor.lockState=blocked?CursorLockMode.None:CursorLockMode.Locked;Cursor.visible=blocked;
             if(lastTarget!=target)
-            {lastTarget=target;smoothedPivot=target.position+Vector3.up*(driving.IsDriving?1.7f:1.35f);distance=driving.IsDriving?9:4.5f;}
+            {lastTarget=target;smoothedPivot=target.position+Vector3.up*(driving.IsDriving?driving.ActiveVehicleCameraHeight:1.35f);distance=driving.IsDriving?driving.ActiveVehicleCameraDistance:4.5f;}
             var mouse=Mouse.current;
             if(!blocked&&mouse!=null)
             {
                 var delta=mouse.delta.ReadValue();if(delta.sqrMagnitude>.01f)lastLookTime=Time.unscaledTime;yaw+=delta.x*sensitivity;pitch=Mathf.Clamp(pitch-delta.y*sensitivity,pitchLimits.x,pitchLimits.y);
-                var zoom=driving.IsDriving?drivingZoom:walkingZoom;
+                var zoom=driving.IsDriving?new Vector2(Mathf.Max(drivingZoom.x,driving.ActiveVehicleCameraDistance-3),Mathf.Max(drivingZoom.y,driving.ActiveVehicleCameraDistance+8)):walkingZoom;
                 distance=Mathf.Clamp(distance-mouse.scroll.ReadValue().y*.005f,zoom.x,zoom.y);
             }
             if(driving.IsDriving && !blocked && Time.unscaledTime-lastLookTime>vehicleRecenterDelay)
-                yaw=Mathf.LerpAngle(yaw,target.eulerAngles.y,1-Mathf.Exp(-2f*Time.unscaledDeltaTime));
+                yaw=Mathf.LerpAngle(yaw,driving.ActiveVehicleYaw,1-Mathf.Exp(-2f*Time.unscaledDeltaTime));
             float blend=1-Mathf.Exp(-followSharpness*Time.unscaledDeltaTime);
-            Vector3 pivot=target.position+Vector3.up*(driving.IsDriving?1.7f:1.35f);
+            Vector3 pivot=target.position+Vector3.up*(driving.IsDriving?driving.ActiveVehicleCameraHeight:1.35f);
             smoothedPivot=Vector3.Distance(smoothedPivot,pivot)>20?pivot:Vector3.Lerp(smoothedPivot,pivot,blend);
             Quaternion orbit=Quaternion.Euler(pitch,yaw,0);Vector3 back=orbit*Vector3.back;
             float clearDistance=distance;

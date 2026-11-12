@@ -170,7 +170,11 @@ namespace RoadsideHaven.Editor
             InstallMultiverse(motel);
             InstallLifeSystems(motel, controller);
             InstallBusinessEmpire(motel);
-            if (motel.Find("Expanded District v1") != null) { InstallWorldLighting(motel, controller); if(!Application.isPlaying)WorldCollisionSetup.Apply(motel,true); return; }
+            InstallModernCity(motel);
+            InstallSportsCarShowcase(motel);
+            UpgradeTrafficRoads(motel);
+            InstallTownLife(motel);
+            if (motel.Find("Expanded District v1") != null) { InstallCompleteStreets(motel); InstallWorldLighting(motel, controller); InstallGroundMaterials(motel); InstallOrganicLake(motel); InstallVillageRiver(motel); InstallBiomeVegetation(motel); if(!Application.isPlaying)WorldCollisionSetup.Apply(motel,true); return; }
             var district = new GameObject("Expanded District v1").transform;
             district.SetParent(motel, false);
             if (!Application.isPlaying) Undo.RegisterCreatedObjectUndo(district.gameObject, "Expand roadside district");
@@ -234,7 +238,7 @@ namespace RoadsideHaven.Editor
                     new Vector3(-33, .15f, 28), new Vector3(-33, .15f, -14)
                 }, 4.5f);
             }
-            InstallWorldLighting(motel, controller);
+            InstallCompleteStreets(motel); InstallWorldLighting(motel, controller); InstallGroundMaterials(motel); InstallOrganicLake(motel); InstallVillageRiver(motel); InstallBiomeVegetation(motel);
             if(!Application.isPlaying)WorldCollisionSetup.Apply(motel,true);
         }
 

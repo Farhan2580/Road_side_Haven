@@ -33,7 +33,7 @@ namespace RoadsideHaven
         private Transform[] limbs;
         private float fallSpeed, gait, prankReadyAt, rivalClosedUntil;
         private bool walking, cargo;
-        private string message = "P: walk as owner | F: enter/exit nearby vehicle | G: interact";
+        private string message = "P: walk as owner | E: enter/exit nearby vehicle | G: interact";
         private Material skin, clothes;
         private PcThirdPersonCamera pcCamera;
         [SerializeField,Min(.1f)] private float jumpHeight=1.1f;
@@ -100,7 +100,7 @@ namespace RoadsideHaven
             if (keyboard != null)
             {
                 if ((keyboard.pKey.wasPressedThisFrame || keyboard.mKey.wasPressedThisFrame) && !driving.IsDriving) SetWalking(!walking);
-                if (keyboard.fKey.wasPressedThisFrame) VehicleInteraction();
+                if (keyboard.eKey.wasPressedThisFrame || keyboard.fKey.wasPressedThisFrame) VehicleInteraction();
                 if (keyboard.gKey.wasPressedThisFrame && walking) Interact();
             }
             if (!walking) return;
@@ -128,7 +128,7 @@ namespace RoadsideHaven
             if (mapCamera != null) mapCamera.FollowWorldPoint(transform.position);
         }
 
-        public bool CanEnter(Rigidbody vehicle) => walking && vehicle != null && Near(vehicle.position, interactionRadius + 1);
+        public bool CanEnter(Rigidbody vehicle) => walking && vehicle != null && WorldDrivingController.EntryDistance(vehicle,transform.position) <= interactionRadius+1;
         public void EnteredVehicle() { SetWalking(false); }
         public void ExitVehicle(Vector3 position)
         {
@@ -156,7 +156,7 @@ namespace RoadsideHaven
             {
                 if (!driving.TryExitOwner()) message = "Stop the vehicle; its side must be clear before exiting.";
             }
-            else if (!driving.TryEnterOwner(transform.position, interactionRadius + 1)) message = "Walk beside your car or CNG, then press F.";
+            else if (!driving.TryEnterOwner(transform.position, interactionRadius + 1)) message = "Walk beside your car or CNG, then press E.";
         }
 
         private void Interact()

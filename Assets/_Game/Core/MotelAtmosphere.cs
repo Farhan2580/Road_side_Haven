@@ -207,6 +207,8 @@ namespace RoadsideHaven
             for (int i = 0; i < vegetation.Count; i++)
             {
                 if (vegetation[i] == null) continue;
+                if(vegetation[i].GetComponentInParent<BiomePlant>()!=null)continue;
+                if(GetComponent<GroundSurfaceStyle>()!=null&&GroundSurfaceStyle.SurfaceFor(vegetation[i].name)==0)continue;
                 var block = new MaterialPropertyBlock();
                 vegetation[i].GetPropertyBlock(block);
                 block.SetColor("_BaseColor", tint);

@@ -10,8 +10,13 @@ namespace RoadsideHaven.Editor
         private static Bounds[] lightingRoadBounds;
         private static void InstallWorldLighting(Transform motel, IsometricCameraController camera)
         {
-            var old = motel.Find("World Night Lighting v1");
-            if (motel.Find("World Night Lighting v2") != null) return;
+            var last=motel.Find("World Night Lighting v4");if(last!=null){last.gameObject.SetActive(false);if(Application.isPlaying)Object.Destroy(last.gameObject);else Undo.DestroyObjectImmediate(last.gameObject);}
+            var previous=motel.Find("World Night Lighting v3");
+            if(previous!=null){previous.gameObject.SetActive(false);if(Application.isPlaying)Object.Destroy(previous.gameObject);else Undo.DestroyObjectImmediate(previous.gameObject);}
+            var old = motel.Find("World Night Lighting v2");
+            var legacyV1=motel.Find("World Night Lighting v1");
+            if (motel.Find("World Night Lighting v5") != null) return;
+            if(legacyV1!=null){legacyV1.gameObject.SetActive(false);if(Application.isPlaying)Object.Destroy(legacyV1.gameObject);else Undo.DestroyObjectImmediate(legacyV1.gameObject);}
             if (old != null) { old.gameObject.SetActive(false); if (Application.isPlaying) Object.Destroy(old.gameObject); else Undo.DestroyObjectImmediate(old.gameObject); }
             // Snapshot first so decorative poles do not get mistaken for buildings/roads.
             var geometry = motel.GetComponentsInChildren<MeshRenderer>(true);
@@ -20,7 +25,7 @@ namespace RoadsideHaven.Editor
             foreach (var legacy in geometry)
                 if ((legacy.name == "Roadside lamp pole" || legacy.name == "Roadside lamp head" || legacy.name == "Street lamp pole" || legacy.name == "Street lamp" || legacy.name == "Street lamp head") && InsideLightingRoad(legacy.bounds.center, roadBounds))
                 { if (!Application.isPlaying) Undo.RecordObject(legacy.gameObject, "Hide lamp inside road"); legacy.gameObject.SetActive(false); }
-            var root = new GameObject("World Night Lighting v2").transform;
+            var root = new GameObject("World Night Lighting v5").transform;
             root.SetParent(motel, false);
             if (!Application.isPlaying) Undo.RegisterCreatedObjectUndo(root.gameObject, "Add world road building and garden lights");
             var glow = Material("Night fixture glass", new Color(1f, .82f, .52f), true);
@@ -54,10 +59,10 @@ namespace RoadsideHaven.Editor
                         }
                     }
                 }
-                bool window = name == "Facade window" || name == "House window" || name == "Window pane" || name == "Street window";
+                bool window = name == "Facade window" || name == "House window" || name == "Window pane" || name == "Street window" || name == "Modern tower facade" || name == "Modern restaurant glass";
                 if (window) surfaces.Add(mesh);
                 bool building = bounds.size.x >= 4 && bounds.size.y >= 2.5f && bounds.size.z >= 4 &&
-                    (name.Contains("Warehouse") || name.Contains("Village house") || name.Contains("Neighborhood building") ||
+                    (name == "Office podium" || name.StartsWith("Modern restaurant ") || name.Contains("Warehouse") || name.Contains("Village house") || name.Contains("Neighborhood building") ||
                      name.Contains("SCHOOL") || name.Contains("COLLEGE") || name.Contains("CITY BLOCK") ||
                      name.Contains("CITY SHOPS") || name.Contains("CITY RESIDENCES") || name.Contains("HIGHWAY MOTEL") ||
                      name.Contains("BEACH HUT") || name.Contains("SUPPLIER"));

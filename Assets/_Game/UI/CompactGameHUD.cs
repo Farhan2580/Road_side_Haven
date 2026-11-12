@@ -38,7 +38,7 @@ namespace RoadsideHaven
             Button(safe,"MENU",new Vector2(-90,-75),new Vector2(130,36),()=>{bool open=!MenuOpen;Close();menu.SetActive(open);});
             var panel=Rect(safe,"Actions",new Vector2(1,1),new Vector2(-20,-100),new Vector2(250,365));panel.pivot=new Vector2(1,1);Background(panel);
             menu=panel.gameObject;
-            string[] names={"Walk / Map (M / P)","Enter / Exit vehicle (F)","Interact nearby (G)","Garage & quests (J)","Talk to NPC (L)","Dimension portal (T)","Reset vehicle (R)","Business empire (B)","Controls"};
+            string[] names={"Walk / Map (M / P)","Enter / Exit vehicle (E)","Interact nearby (G)","Garage & quests (J)","Talk to NPC (L)","Dimension portal (T)","Reset vehicle (R)","Business empire (B)","Controls"};
             UnityEngine.Events.UnityAction[] actions={()=>owner?.ToggleWalking(),()=>owner?.VehicleInteraction(),()=>owner?.UseNearby(),()=>life?.TogglePanel(),()=>life?.OpenDialogue(),()=>multiverse?.TogglePortal(),()=>driving?.ResetActiveVehicle(),()=>business?.TogglePanel(),()=>help.SetActive(true)};
             for(int i=0;i<names.Length;i++)
             {
@@ -47,7 +47,7 @@ namespace RoadsideHaven
             }
             var info=Rect(safe,"Controls",new Vector2(.5f,.5f),Vector2.zero,new Vector2(620,300));Background(info);help=info.gameObject;
             var text=Rect(info,"Help",new Vector2(.5f,.5f),new Vector2(0,20),new Vector2(570,210));
-            Label(text,"CONTROLS\n\nMouse: look   Scroll: camera distance\nWASD: move/drive   Shift: sprint\nSpace: jump / vehicle brake   F: enter/exit\nG: interact   J: garage   L: talk   T: portal   B: empire\nM / P: map / walk   Escape: release cursor\nClick the game to resume mouse look",20);
+            Label(text,"CONTROLS\n\nMouse: look   Scroll: camera distance\nWASD: move/drive   Shift: sprint\nSpace: jump / vehicle brake   E: enter/exit\nG: interact   J: garage   L: talk   T: portal   B: empire\nM / P: map / walk   Escape: release cursor\nClick the game to resume mouse look",20);
             var done=Rect(info,"Close",new Vector2(.5f,0),new Vector2(0,28),new Vector2(150,34));MakeButton(done,"CLOSE",Close);
             var notice=Rect(safe,"Notice",new Vector2(.5f,0),new Vector2(0,130),new Vector2(940,40));
             toast=Label(notice,"",17);toast.enableAutoSizing=true;toast.fontSizeMin=13;toast.fontSizeMax=17;
@@ -72,7 +72,7 @@ namespace RoadsideHaven
             if(modal&&MenuOpen)Close();
             if(cameraController!=null)cameraController.SetOverlayInputBlocked(MenuOpen||modal);
             if(clock!=null&&atmosphere!=null)
-            {int minutes=Mathf.FloorToInt(atmosphere.Hour*60);clock.text=$"{atmosphere.Season} | Day {atmosphere.Day} | {minutes/60:00}:{minutes%60:00}"+(multiverse!=null&&multiverse.Current!=UniverseId.Normal?$" | {multiverse.Current}":"");}
+            {int minutes=Mathf.FloorToInt(atmosphere.Hour*60);clock.text=$"{atmosphere.Season} | Day {atmosphere.Day} | {minutes/60:00}:{minutes%60:00}"+(multiverse!=null&&multiverse.Current!=UniverseId.Normal?$" | {multiverse.Current}":"")+(driving!=null&&driving.IsDriving?$" | {driving.SpeedKph:0} km/h":"");}
         }
         private void Watch(ref string previous,string current)
         {

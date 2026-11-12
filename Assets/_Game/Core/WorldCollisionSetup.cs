@@ -14,12 +14,15 @@ namespace RoadsideHaven
         }
         public static int Apply(Transform root,bool addCarving)
         {
+            RoadMarkingCleanup.RemoveStopLines(root);
+            RoadMarkingCleanup.FlattenCrossings(root);
+            var roadSurface=root.GetComponent<RoadSurfacePhysics>();
             int repaired=0;
             // The old roadside sign predates the wider highway; move the entire assembly to its shoulder.
             foreach(var marker in root.GetComponentsInChildren<Transform>(true))
-                if(marker.name=="Sign post" && Mathf.Abs(marker.position.x+11)<.5f && marker.position.z>-20 && marker.position.z<-6)
+                if(marker.name=="Sign post" && Mathf.Abs(marker.position.x+11)<.5f && marker.position.z>-26 && marker.position.z<-6)
                 {
-                    float shift=-21-marker.position.z;
+                    float shift=-27-marker.position.z;
                     foreach(var part in root.GetComponentsInChildren<Transform>(true))
                         if(part.name=="Sign post"||part.name=="Roadside sign"||part.name=="Motel sign lettering")part.position+=Vector3.forward*shift;
                     break;
@@ -27,6 +30,8 @@ namespace RoadsideHaven
             foreach(var renderer in root.GetComponentsInChildren<MeshRenderer>(true))
             {
                 if(renderer.GetComponent<TMPro.TMP_Text>()!=null||renderer.GetComponentInParent<PhysicalWorldSign>()!=null)continue;
+                if(roadSurface!=null&&roadSurface.HasSurface&&TownPopulationController.RoadName(renderer.name))
+                {foreach(var collider in renderer.GetComponents<Collider>())collider.enabled=false;continue;}
                 if(!WorldCollisionRules.IsSolidName(renderer.name))continue;
                 // Dynamic actors/vehicles already own their authoritative capsule/box colliders.
                 if(renderer.GetComponentInParent<Rigidbody>()!=null||renderer.GetComponentInParent<CharacterController>()!=null||renderer.GetComponentInParent<NavMeshAgent>()!=null)continue;
@@ -50,6 +55,7 @@ namespace RoadsideHaven
                 var carve=renderer.gameObject.AddComponent<NavMeshObstacle>();carve.shape=NavMeshObstacleShape.Box;
                 carve.center=meshBounds.center;carve.size=meshBounds.size;carve.carving=true;carve.carveOnlyStationary=true;
             }
+            RiverGroundPhysics.Apply(root);
             Physics.SyncTransforms();
             return repaired;
         }

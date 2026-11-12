@@ -11,7 +11,7 @@ namespace RoadsideHaven
         [SerializeField] private IsometricCameraController mapCamera;
         [Header("Arcade handling")]
         [SerializeField, Min(1)] private float acceleration = 9f;
-        [SerializeField, Min(1)] private float topSpeed = 13f;
+        private const float MaximumForwardSpeed = 170f / 3.6f;
         [SerializeField, Min(1)] private float reverseSpeed = 4f;
         [SerializeField, Min(1)] private float steering = 80f;
         [SerializeField, Min(1)] private float braking = 18f;
@@ -23,7 +23,11 @@ namespace RoadsideHaven
         private OwnerLifeController life;
         public void ConfigureLife(OwnerLifeController controller) => life = controller;
         public bool IsDriving => active >= 0;
+        public float SpeedKph => IsDriving && vehicles[active]!=null ? Vector3.ProjectOnPlane(vehicles[active].linearVelocity,Vector3.up).magnitude*3.6f : 0;
         public Transform ActiveVehicleTransform => active>=0 && vehicles!=null && active<vehicles.Length && vehicles[active]!=null ? vehicles[active].transform : null;
+        public float ActiveVehicleCameraDistance { get { var box=ActiveVehicleTransform==null?null:ActiveVehicleTransform.GetComponent<BoxCollider>(); return box==null?9:Mathf.Max(9,box.size.z*ActiveVehicleTransform.lossyScale.z*.5f+6); } }
+        public float ActiveVehicleCameraHeight { get { var box=ActiveVehicleTransform==null?null:ActiveVehicleTransform.GetComponent<BoxCollider>(); return box==null?1.7f:Mathf.Max(1.7f,box.size.y*ActiveVehicleTransform.lossyScale.y*.75f); } }
+        public float ActiveVehicleYaw => ActiveVehicleTransform==null?0:ActiveVehicleTransform.eulerAngles.y+(ActiveVehicleTransform.GetComponent<EnterableVehicle>()?.ForwardSign<0?180:0);
         public void ConfigureOwner(OwnerSandboxController player) => owner = player;
         private int active = -1;
         private float throttle, turn, washProgress;
@@ -89,23 +93,14 @@ namespace RoadsideHaven
         {
             if (vehicles == null || active < 0 || active >= vehicles.Length || vehicles[active] == null) return;
             var vehicle = vehicles[active];
-            var velocity = vehicle.linearVelocity;
-            Vector3 forward = vehicle.transform.forward;
-            float speed = Vector3.Dot(velocity, forward);
-            bool grounded = Physics.Raycast(vehicle.position + Vector3.up * .15f, Vector3.down, .65f,
-                Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-            if (grounded)
-            {
-                float input = Mathf.Clamp(throttle, -1, 1);
-                if ((input > 0 && speed < topSpeed * (life == null ? 1 : life.VehicleMultiplier(active))) || (input < 0 && speed > -reverseSpeed))
-                    vehicle.AddForce(forward * input * acceleration * (life == null ? 1 : life.VehicleMultiplier(active)), ForceMode.Acceleration);
-                Vector3 sideways = vehicle.transform.right * Vector3.Dot(velocity, vehicle.transform.right);
-                vehicle.AddForce(-sideways * lateralGrip, ForceMode.Acceleration);
-                if (brake || Mathf.Abs(input) < .01f)
-                    vehicle.AddForce(-new Vector3(velocity.x, 0, velocity.z) * (brake ? braking : 1f), ForceMode.Acceleration);
-                float rotation = Mathf.Clamp(turn, -1, 1) * steering * Mathf.Clamp(speed / 3f, -1, 1) * Time.fixedDeltaTime;
-                vehicle.MoveRotation(vehicle.rotation * Quaternion.Euler(0, rotation, 0));
-            }
+            var trafficDriver=vehicle.GetComponent<TownVehicleAgent>();if(trafficDriver!=null&&trafficDriver.enabled)trafficDriver.enabled=false;
+            var access=vehicle.GetComponent<EnterableVehicle>();
+            float scale=(access==null?1:access.SpeedScale)*(life==null?1:life.VehicleMultiplier(active));
+            var motor=vehicle.GetComponent<ArcadeVehicleMotor>();if(motor==null){motor=vehicle.gameObject.AddComponent<ArcadeVehicleMotor>();motor.Prepare();}
+            motor.Drive(throttle,turn,brake,acceleration*scale,Mathf.Min(MaximumForwardSpeed,MaximumForwardSpeed*scale),reverseSpeed,steering,braking,lateralGrip,access==null?1:access.ForwardSign,Time.fixedDeltaTime);
+            var horizontalVelocity=Vector3.ProjectOnPlane(vehicle.linearVelocity,Vector3.up);
+            if(horizontalVelocity.sqrMagnitude>MaximumForwardSpeed*MaximumForwardSpeed)vehicle.linearVelocity=horizontalVelocity.normalized*MaximumForwardSpeed+Vector3.up*vehicle.linearVelocity.y;
+            var velocity=vehicle.linearVelocity;
             bool insideWash = Mathf.Abs(vehicle.position.x - washCenter.x) < washHalfSize.x &&
                               Mathf.Abs(vehicle.position.z - washCenter.z) < washHalfSize.y;
             if (insideWash && velocity.magnitude < .5f && !clean[active])
@@ -145,9 +140,9 @@ namespace RoadsideHaven
         {
             if (vehicles == null) return;
             if (owner != null && index >= 0 && (index >= vehicles.Length || !owner.CanEnter(vehicles[index])))
-            { status = "Walk beside your vehicle and press F to enter."; return; }
+            { status = "Walk beside your vehicle and press E to enter."; return; }
             if (owner != null && active >= 0 && index < 0) { TryExitOwner(); return; }
-            if (index >= 0 && life != null && !life.Owns(index)) { status = "Buy this vehicle at the motel garage first (J)."; return; }
+
             if (index >= 0 && shopHud != null && shopHud.IsOpen)
             { status = "Close the shop panel before driving."; return; }
             if (active >= 0 && active < vehicles.Length && vehicles[active] != null)
@@ -165,7 +160,8 @@ namespace RoadsideHaven
             {
                 if (owner != null) owner.EnteredVehicle();
                 if (mapCamera != null) mapCamera.SetModalInputBlocked(true);
-                vehicles[active].isKinematic = false;
+                var access=vehicles[active].GetComponent<EnterableVehicle>();
+                if(access!=null)access.TakeControl();else{vehicles[active].isKinematic=false;vehicles[active].useGravity=true;}
                 status = "WASD / arrows: drive | SPACE: brake | TAB: switch | R: reset";
             }
             else
@@ -192,20 +188,48 @@ namespace RoadsideHaven
             if (vehicles == null || vehicles.Length < 3 || vehicles[2] == null || life != null && !life.Owns(2)) return false;
             return Vector2.Distance(new Vector2(point.x,point.z),new Vector2(vehicles[2].position.x,vehicles[2].position.z)) <= radius;
         }
+        public bool IsRegistered(Rigidbody body)=>vehicles!=null&&System.Array.IndexOf(vehicles,body)>=0;
+        public void RegisterVehicle(Rigidbody body)
+        {
+            if(body==null||IsRegistered(body))return;
+            if(vehicles==null)vehicles=new Rigidbody[3];
+            if(vehicles.Length<3)System.Array.Resize(ref vehicles,3);
+            int index=vehicles.Length;System.Array.Resize(ref vehicles,index+1);vehicles[index]=body;
+            System.Array.Resize(ref clean,index+1);System.Array.Resize(ref startPositions,index+1);System.Array.Resize(ref startRotations,index+1);
+            startPositions[index]=body.position;startRotations[index]=body.rotation;
+        }
         public void AppendSupplyTruck(Rigidbody truck)
         {
-            if (vehicles == null || vehicles.Length != 2 || truck == null) return;
-            System.Array.Resize(ref vehicles,3); vehicles[2]=truck;
-            if (clean != null) System.Array.Resize(ref clean,3);
-            if (startPositions != null) { System.Array.Resize(ref startPositions,3); startPositions[2]=truck.position; }
-            if (startRotations != null) { System.Array.Resize(ref startRotations,3); startRotations[2]=truck.rotation; }
+            if(vehicles==null||truck==null)return;
+            if(vehicles.Length<3)System.Array.Resize(ref vehicles,3);
+            if(vehicles[2]!=null)return;
+            vehicles[2]=truck;System.Array.Resize(ref clean,vehicles.Length);
+            if(startPositions!=null){System.Array.Resize(ref startPositions,vehicles.Length);startPositions[2]=truck.position;}
+            if(startRotations!=null){System.Array.Resize(ref startRotations,vehicles.Length);startRotations[2]=truck.rotation;}
+        }
+        public static float EntryDistance(Rigidbody vehicle,Vector3 ownerPosition)
+        {
+            Vector3 from=ownerPosition+Vector3.up*.8f;float nearest=float.MaxValue;
+            foreach(var collider in vehicle.GetComponentsInChildren<Collider>())
+            {
+                if(!collider.enabled||collider.isTrigger)continue;
+                nearest=Mathf.Min(nearest,Vector3.Distance(from,collider.ClosestPoint(from)));
+            }
+            return nearest;
         }
         public bool TryEnterOwner(Vector3 position, float radius)
         {
             if (vehicles == null || IsDriving) return false;
-            for (int i = 0; i < vehicles.Length; i++)
-                if (vehicles[i] != null && Vector3.Distance(position, vehicles[i].position) <= radius)
-                { SelectVehicle(i); return IsDriving; }
+            int nearest=-1;float distance=radius;
+            for(int i=0;i<vehicles.Length;i++)
+            {
+                if(vehicles[i]==null||!vehicles[i].gameObject.activeInHierarchy)continue;
+                float candidate=EntryDistance(vehicles[i],position);if(candidate>distance)continue;
+                Vector3 from=position+Vector3.up;Vector3 to=vehicles[i].worldCenterOfMass;
+                if(Physics.Linecast(from,to,out var hit,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore)&&!hit.transform.IsChildOf(vehicles[i].transform))continue;
+                nearest=i;distance=candidate;
+            }
+            if(nearest>=0){SelectVehicle(nearest);return IsDriving;}
             return false;
         }
 
@@ -216,7 +240,21 @@ namespace RoadsideHaven
             if (vehicle.linearVelocity.magnitude > 1) return false;
             for (int side = -1; side <= 1; side += 2)
             {
-                var point = vehicle.position + vehicle.transform.right * side * 2.5f;
+                float halfWidth=0;
+                foreach(var collider in vehicle.GetComponentsInChildren<Collider>())if(collider.enabled&&!collider.isTrigger)
+                {
+                    var box=collider as BoxCollider;Vector3 right=vehicle.transform.right;
+                    if(box!=null)
+                    {
+                        float extent=Mathf.Abs(Vector3.Dot(box.transform.TransformVector(Vector3.right*box.size.x*.5f),right))+
+                            Mathf.Abs(Vector3.Dot(box.transform.TransformVector(Vector3.up*box.size.y*.5f),right))+
+                            Mathf.Abs(Vector3.Dot(box.transform.TransformVector(Vector3.forward*box.size.z*.5f),right));
+                        halfWidth=Mathf.Max(halfWidth,Mathf.Abs(Vector3.Dot(box.transform.TransformPoint(box.center)-vehicle.position,right))+extent);
+                    }
+                    else halfWidth=Mathf.Max(halfWidth,Mathf.Abs(Vector3.Dot(collider.bounds.center-vehicle.position,right))+Mathf.Abs(right.x)*collider.bounds.extents.x+Mathf.Abs(right.z)*collider.bounds.extents.z);
+                }
+                var point = vehicle.worldCenterOfMass + vehicle.transform.right * side * Mathf.Max(2.5f,halfWidth+.8f);
+                point.y=vehicle.position.y;
                 if (!Physics.Raycast(point + Vector3.up * 3, Vector3.down, out var ground, 8, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)) continue;
                 point = ground.point + Vector3.up * .1f;
                 if (Physics.CheckCapsule(point + Vector3.up * .4f, point + Vector3.up * 1.5f, .32f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)) continue;
@@ -225,7 +263,8 @@ namespace RoadsideHaven
                 var spray = transform.Find("Car Wash Spray"); if (spray != null) spray.gameObject.SetActive(false);
                 if (motelHud != null) motelHud.gameObject.SetActive(motelHudWasVisible);
                 owner.ExitVehicle(point);
-                status = "On foot. F: enter nearby vehicle | G: work / interact";
+                vehicle.GetComponent<EnterableVehicle>()?.ReleaseControl();
+                status = "On foot. E: enter nearby vehicle | G: work / interact";
                 return true;
             }
             return false;

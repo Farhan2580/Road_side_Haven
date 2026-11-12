@@ -16,7 +16,7 @@ namespace RoadsideHaven
             trim=new Material(shader){color=new Color(.63f,.45f,.22f)};
             foreach(var label in GetComponentsInChildren<TextMeshPro>(true))
             {
-                if(label.GetComponent<PhysicalWorldSign>()!=null)continue;
+                if(label.GetComponent<PhysicalWorldSign>()!=null||label.GetComponentInParent<Rigidbody>()!=null)continue;
                 string text=label.text;
                 if(text=="ROADSIDE HAVEN" && label.transform.position.y<1){label.gameObject.SetActive(false);continue;}
                 if(label.name=="Motel sign lettering")continue;
