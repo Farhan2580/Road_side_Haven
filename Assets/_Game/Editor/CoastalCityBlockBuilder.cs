@@ -31,7 +31,8 @@ namespace RoadsideHaven.Editor
         }
         public static Transform Build(MotelGameRoot motel)
         {
-            var existing=motel.transform.Find(Layer);if(existing!=null)return existing;
+            var existing=motel.transform.Find(Layer);if(existing!=null&&existing.Find("Parking access v2")!=null)return existing;
+            if(existing!=null)UnityEngine.Object.DestroyImmediate(existing.gameObject);
             if(!AssetDatabase.IsValidFolder(Folder))AssetDatabase.CreateFolder("Assets/_Game/Generated","CoastalCityBlock");
             cream=Load("Warm stucco");coral=Load("Sunset coral");mint=Load("Seafoam stucco");ink=Load("Blue graphite");wood=Load("Oiled cedar");stone=Load("Travertine paving");glass=Load("Teal window glass");leaf=Load("Palm foliage");glow=Load("Warm accent");rose=Load("Rose neon");
             var root=new GameObject(Layer).transform;root.SetParent(motel.transform,false);root.gameObject.AddComponent<MotelDistrictArt>();
@@ -51,25 +52,26 @@ namespace RoadsideHaven.Editor
                     if(group!=null&&group.name.StartsWith("Avenue "))group.gameObject.SetActive(false);
                 }
             }
-            Box(root,"Public plaza paving",new Vector3(142,.03f,6.5f),new Vector3(47,.12f,9),stone,false);
+            Box(root,"Public plaza paving",new Vector3(143,.03f,6.5f),new Vector3(45,.12f,9),stone,true);
             Restaurant(root,126);
             Apartment(root,142,coral,"CORAL RECORDS",false);
             Apartment(root,158,mint,"PALM PHARMACY",true);
             // Private parking has flat, nonblocking painted stalls and a clear 4m access aisle at X=118.
-            Box(root,"Private parking apron",new Vector3(141,.025f,29),new Vector3(50,.1f,12),ink,false);
+            Box(root,"Private parking apron",new Vector3(141,.025f,29),new Vector3(50,.1f,12),ink,true);
             for(int i=0;i<10;i++)Box(root,"Parking stripe",new Vector3(122+i*4,.082f,30),new Vector3(.08f,.008f,6),cream,false);
             for(int i=0;i<3;i++)Box(root,"Parking aisle dash",new Vector3(124+i*14,.082f,25),new Vector3(4,.008f,.1f),cream,false);
             Sign(root,"P  /  VISITOR PARKING",new Vector3(118.8f,2.2f,30),.22f,3.6f,cream.color);
             Box(root,"Parking sign plaque",new Vector3(118.8f,2.2f,30.08f),new Vector3(4,.7f,.12f),ink,false);
             Box(root,"Parking sign post",new Vector3(118.8f,1.1f,30.15f),new Vector3(.1f,2.2f,.1f),ink,true);
             Shelter(root,new Vector3(149,0,5));
-            foreach(float x in new[]{119.2f,134f,165f})Palm(root,new Vector3(x,0,7.5f));
-            foreach(float x in new[]{119.2f,134f,165f})Planter(root,new Vector3(x,.1f,7.5f));
+            foreach(var p in new[]{new Vector3(121.2f,0,22.2f),new Vector3(134,0,7.5f),new Vector3(165,0,7.5f)}){Palm(root,p);Planter(root,p+Vector3.up*.1f);}
+
             foreach(float x in new[]{136f,164.4f})
             {
                 Box(root,"Street litter bin",new Vector3(x,.55f,9),new Vector3(.5f,1.0f,.5f),ink,true);
                 Box(root,"Bin lid",new Vector3(x,1.1f,9),new Vector3(.55f,.08f,.55f),wood,false);
             }
+            new GameObject("Parking access v2").transform.SetParent(root,false);
             Combine(root);foreach(var t in root.GetComponentsInChildren<TMP_Text>())t.ForceMeshUpdate(true,true);AssetDatabase.SaveAssets();return root;
         }
         private static void Restaurant(Transform root,float x)
@@ -164,6 +166,10 @@ namespace RoadsideHaven.Editor
         {
             Box(root,"Palm garden planter",p+Vector3.up*.2f,new Vector3(1.2f,.4f,1.2f),stone,true);
             for(int i=0;i<4;i++){float a=i*Mathf.PI*.5f;Box(root,"Garden shrub",p+new Vector3(Mathf.Cos(a)*.4f,.5f,Mathf.Sin(a)*.4f),new Vector3(.55f,.6f,.55f),leaf,false,PrimitiveType.Sphere);}
+        }
+        internal static void AddPromenadePalm(Transform root,Vector3 position)
+        {
+            wood=Load("Oiled cedar");leaf=Load("Palm foliage");Palm(root,position);
         }
         private static void Palm(Transform root,Vector3 p)
         {

@@ -91,7 +91,7 @@ namespace RoadsideHaven
             }
             ready=true;
         }
-        public static bool RoadName(string name)=>name=="Connected road"||name=="Road"||name=="Highway extension"||name=="North avenue"||name=="Connecting avenue";
+        public static bool RoadName(string name)=>name=="Airport access road"||name=="Connected road"||name=="Road"||name=="Highway extension"||name=="North avenue"||name=="Connecting avenue";
         private Vector3 RandomRoadPoint(){var road=network.Roads[Random.Range(0,network.Roads.Count)];return Vector3.Lerp(road.A,road.B,Random.Range(.08f,.92f));}
         private Material Mat(string name,Color color){var m=new Material(Shader.Find("Universal Render Pipeline/Lit")){name=name,color=color};materials.Add(m);return m;}
         private static Vector3 Sidewalk(TownRoadNetwork.Road road,float t)
