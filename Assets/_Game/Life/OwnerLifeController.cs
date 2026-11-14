@@ -86,9 +86,15 @@ namespace RoadsideHaven
         }
         private void Consider(Transform candidate,string id,string label,ref float nearest)
         {float distance=Vector3.Distance(owner.transform.position,candidate.position);if(distance>nearest)return;nearest=distance;npc=candidate;npcId=id;npcName=label;}
-        private bool AtGarage=>Near(new Vector3(-5,0,-6),6)&&IsNormal&&!driving.IsDriving;
-        private bool AtPortal => !driving.IsDriving && (Near(new Vector3(-16,0,-6),5) || Near(new Vector3(-350,0,0),5) ||
-            Near(new Vector3(180,0,690),5) || Near(new Vector3(-350,0,-650),5) || Near(new Vector3(500,0,-230),5));
+        [SerializeField] private Vector3 garagePosition=new Vector3(-5,0,-6);
+        [SerializeField] private Vector3 normalPortalPosition=new Vector3(-16,0,-6);
+        [SerializeField] private Vector3[] travelPortalPositions={new Vector3(-350,0,0),new Vector3(180,0,690),new Vector3(-350,0,-650),new Vector3(500,0,-230)};
+        public void OffsetBaseLocations(Vector3 delta){garagePosition+=delta;normalPortalPosition+=delta;}
+        public void OffsetNearbyPortal(Vector3 from,Vector3 delta)
+        {for(int i=0;i<travelPortalPositions.Length;i++)if(Vector2.Distance(new Vector2(from.x,from.z),new Vector2(travelPortalPositions[i].x,travelPortalPositions[i].z))<8)travelPortalPositions[i]+=delta;}
+        private bool NearTravelPortal{get{for(int i=0;i<travelPortalPositions.Length;i++)if(Near(travelPortalPositions[i],5))return true;return false;}}
+        private bool AtGarage=>Near(garagePosition,6)&&IsNormal&&!driving.IsDriving;
+        private bool AtPortal => !driving.IsDriving && (Near(normalPortalPosition,5)||NearTravelPortal);
         private void Travel(Vector3 destination)
         {
             if(!AtPortal||!IsNormal||owner.HasSupplyCargo||(conflictsEnabled&&progress.Trouble>=3)){message="Use a Normal portal, unload cargo and clear any police fine before travel.";return;}
@@ -125,7 +131,7 @@ namespace RoadsideHaven
                     if(GUI.Button(new Rect(700,435+i*42,220,35),$"UPGRADE {progress.UpgradePrice(i)}"))message=AtGarage&&progress.Upgrade(i)?"Acceleration and top speed upgraded.":"Garage required; check ownership, coins and level cap.";
                 }
                 GUI.Label(new Rect(245,565,720,25),"Fast travel from purple portal only; no loaded supply cargo.");
-                var destinations=new[]{new Vector3(-16,0,-6),new Vector3(-350,0,0),new Vector3(180,0,690),new Vector3(-350,0,-650),new Vector3(500,0,-230)};
+                var destinations=new[]{normalPortalPosition,travelPortalPositions[0],travelPortalPositions[1],travelPortalPositions[2],travelPortalPositions[3]};
                 var names=new[]{"MOTEL","CITY","HIGHWAY","BEACH","SUPPLIER"};
                 for(int i=0;i<5;i++)if(GUI.Button(new Rect(245+i*152,595,145,35),names[i]))Travel(destinations[i]);
                 conflictsEnabled=GUI.Toggle(new Rect(245,640,250,30),conflictsEnabled,"Enable optional conflicts");

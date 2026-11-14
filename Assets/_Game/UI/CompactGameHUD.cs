@@ -36,10 +36,10 @@ namespace RoadsideHaven
             var label=Rect(safe,"Time",new Vector2(0,1),new Vector2(20,-66),new Vector2(600,26));label.pivot=new Vector2(0,1);
             clock=Label(label,"",17);clock.alignment=TextAlignmentOptions.Left;
             Button(safe,"MENU",new Vector2(-90,-75),new Vector2(130,36),()=>{bool open=!MenuOpen;Close();menu.SetActive(open);});
-            var panel=Rect(safe,"Actions",new Vector2(1,1),new Vector2(-20,-100),new Vector2(250,365));panel.pivot=new Vector2(1,1);Background(panel);
+            var panel=Rect(safe,"Actions",new Vector2(1,1),new Vector2(-20,-100),new Vector2(250,405));panel.pivot=new Vector2(1,1);Background(panel);
             menu=panel.gameObject;
-            string[] names={"Walk / Map (M / P)","Enter / Exit vehicle (E)","Interact nearby (G)","Garage & quests (J)","Talk to NPC (L)","Dimension portal (T)","Reset vehicle (R)","Business empire (B)","Controls"};
-            UnityEngine.Events.UnityAction[] actions={()=>owner?.ToggleWalking(),()=>owner?.VehicleInteraction(),()=>owner?.UseNearby(),()=>life?.TogglePanel(),()=>life?.OpenDialogue(),()=>multiverse?.TogglePortal(),()=>driving?.ResetActiveVehicle(),()=>business?.TogglePanel(),()=>help.SetActive(true)};
+            string[] names={"Walk / Map (M / P)","Enter / Exit vehicle (E)","Interact nearby (G)","Garage & quests (J)","Talk to NPC (L)","Dimension portal (T)","Reset vehicle (R)","Business empire (B)","AIRPORT (walk / F10)","Controls"};
+            UnityEngine.Events.UnityAction[] actions={()=>owner?.ToggleWalking(),()=>owner?.VehicleInteraction(),()=>owner?.UseNearby(),()=>life?.TogglePanel(),()=>life?.OpenDialogue(),()=>multiverse?.TogglePortal(),()=>driving?.ResetActiveVehicle(),()=>business?.TogglePanel(),()=>GetComponentInChildren<AirportOperations>(true)?.VisitAirport(),()=>help.SetActive(true)};
             for(int i=0;i<names.Length;i++)
             {
                 int index=i;var button=Rect(panel,names[i],new Vector2(.5f,1),new Vector2(0,-23-i*39),new Vector2(230,32));

@@ -8,7 +8,7 @@ namespace RoadsideHaven
     public sealed class ShopCustomerActor : MonoBehaviour
     {
         private NavMeshAgent agent;
-        private readonly NavMeshPath path = new NavMeshPath();
+        private NavMeshPath path;
 
         public bool IsOnMesh => agent != null && agent.enabled && agent.isOnNavMesh;
         public bool HasArrived => IsOnMesh && !agent.pathPending &&
@@ -19,6 +19,7 @@ namespace RoadsideHaven
 
         private void Awake()
         {
+            path = new NavMeshPath();
             agent = GetComponent<NavMeshAgent>();
             if (GetComponent<ProceduralWalker>() == null) gameObject.AddComponent<ProceduralWalker>();
         }

@@ -9,12 +9,14 @@ namespace RoadsideHaven
     {
         [SerializeField] private MeshCollider drivingSurface;
         private Mesh transient;
+        private const float MaximumCellSize=64f;
         public bool HasSurface=>drivingSurface!=null&&drivingSurface.enabled&&drivingSurface.sharedMesh!=null;
         public Mesh SurfaceMesh=>drivingSurface==null?null:drivingSurface.sharedMesh;
         private IEnumerator Start(){yield return null;yield return null;if(!HasSurface)Rebuild(transform);}
         public void UseSavedMesh(Mesh mesh){AssignMesh(mesh);transient=null;}
         public void AssignMesh(Mesh mesh)
         {
+            if(drivingSurface==null){var obj=new GameObject("Continuous road physics");obj.transform.SetParent(transform,false);obj.transform.position=Vector3.zero;drivingSurface=obj.AddComponent<MeshCollider>();}
             drivingSurface.sharedMesh=null;drivingSurface.sharedMesh=mesh;
             if(transient!=null&&transient!=mesh){if(Application.isPlaying)Destroy(transient);else DestroyImmediate(transient);transient=null;}
         }
@@ -48,7 +50,8 @@ namespace RoadsideHaven
         private static int Vertex(int x,int z,List<float> xs,List<float> zs,List<Vector3> vertices,Dictionary<long,int> lookup)
         {long key=((long)x<<32)|(uint)z;if(lookup.TryGetValue(key,out int index))return index;index=vertices.Count;vertices.Add(new Vector3(xs[x],.06f,zs[z]));lookup.Add(key,index);return index;}
         private static void SortUnique(List<float> values)
-        {values.Sort();for(int i=values.Count-1;i>0;i--)if(Mathf.Abs(values[i]-values[i-1])<.0001f)values.RemoveAt(i);}
+        {values.Sort();for(int i=values.Count-1;i>0;i--)if(Mathf.Abs(values[i]-values[i-1])<.0001f)values.RemoveAt(i);
+            for(int i=values.Count-2;i>=0;i--){float a=values[i],b=values[i+1];int segments=Mathf.CeilToInt((b-a)/MaximumCellSize);for(int part=segments-1;part>0;part--)values.Insert(i+1,Mathf.Lerp(a,b,part/(float)segments));}}
         private void OnDestroy(){if(transient!=null){if(Application.isPlaying)Destroy(transient);else DestroyImmediate(transient);}}
     }
 }

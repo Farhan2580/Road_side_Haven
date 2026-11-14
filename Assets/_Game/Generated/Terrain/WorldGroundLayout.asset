@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: afb60c4b9e5b4d4394ee1b90eb493a3f, type: 3}
   m_Name: WorldGroundLayout
   m_EditorClassIdentifier: RoadsideHaven.Runtime::RoadsideHaven.GroundTerrainBakeStamp
-  Signature: 925327789
+  Signature: -1878598617
   Bottom: -0.26

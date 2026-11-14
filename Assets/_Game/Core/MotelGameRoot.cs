@@ -101,6 +101,7 @@ namespace RoadsideHaven
                 return;
             }
 
+            var clearance=GetComponent<RoadClearance>();if(clearance==null||!clearance.LayoutValidated)RoadClearance.Resolve(transform);
             if (GetComponent<VehicleAccessSetup>() == null) gameObject.AddComponent<VehicleAccessSetup>();
             if (GetComponent<RoadSurfacePhysics>() == null) gameObject.AddComponent<RoadSurfacePhysics>();
             if (GetComponent<WorldCollisionSetup>() == null) gameObject.AddComponent<WorldCollisionSetup>();

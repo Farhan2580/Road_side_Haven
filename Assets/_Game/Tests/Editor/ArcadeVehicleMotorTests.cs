@@ -19,7 +19,7 @@ namespace RoadsideHaven.Tests
         [TestCase("Long sports car curb",false,false,false,.35f,true)]
         public void MotorDrivesOnSolidSurfacesAndRespectsWalls(string label,bool highPivot,bool reverse,bool wall,float step=0,bool modern=false)
         {
-            var scene=SceneManager.CreateScene("Vehicle regression "+Guid.NewGuid(),new CreateSceneParameters(LocalPhysicsMode.Physics3D));
+            var scene=EditorSceneManager.NewPreviewScene();
             PhysicsMaterial groundMaterial=null;
             try
             {
@@ -38,7 +38,7 @@ namespace RoadsideHaven.Tests
                 else if(reverse)Assert.That(body.position.z,Is.LessThan(-5));
                 else Assert.That(body.position.z,Is.GreaterThan(5));
             }
-            finally{EditorSceneManager.CloseScene(scene,true);if(groundMaterial!=null)UnityEngine.Object.DestroyImmediate(groundMaterial);}
+            finally{EditorSceneManager.ClosePreviewScene(scene);if(groundMaterial!=null)UnityEngine.Object.DestroyImmediate(groundMaterial);}
         }
     }
 }

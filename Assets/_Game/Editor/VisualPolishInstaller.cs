@@ -22,7 +22,7 @@ namespace RoadsideHaven.Editor
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
         }
 
-        // Install after entering Play Mode: opening the prototype does not modify its saved scene.
+        // Play Mode must not run asset-authoring tools or rewrite persistent meshes and materials.
         private static void OnPlayModeChanged(PlayModeStateChange state)
         {
             if (state != PlayModeStateChange.EnteredPlayMode) return;
@@ -30,7 +30,8 @@ namespace RoadsideHaven.Editor
             if (scene.path != "Assets/_Game/Generated/RoadsideHavenPrototype.unity") return;
             var motel = scene.GetRootGameObjects()
                 .SelectMany(go => go.GetComponentsInChildren<MotelGameRoot>(true)).FirstOrDefault();
-            if (motel != null) Install(motel, TMP_Settings.GetFontAsset());
+            if (motel != null && motel.transform.Find(LayerName) == null)
+                Debug.LogWarning("Apply Roadside Haven > Apply Visual Upgrade in Edit Mode and save the scene before playing.");
         }
 
         [MenuItem("Roadside Haven/Apply Visual Upgrade")]

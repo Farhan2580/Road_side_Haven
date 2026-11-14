@@ -16,6 +16,7 @@ namespace RoadsideHaven
             trim=new Material(shader){color=new Color(.63f,.45f,.22f)};
             foreach(var label in GetComponentsInChildren<TextMeshPro>(true))
             {
+                if(!label.gameObject.activeInHierarchy||label.GetComponentInParent<AirportOperations>()!=null||label.GetComponentInParent<MotelDistrictArt>()!=null)continue;
                 if(label.GetComponent<PhysicalWorldSign>()!=null||label.GetComponentInParent<Rigidbody>()!=null)continue;
                 string text=label.text;
                 if(text=="ROADSIDE HAVEN" && label.transform.position.y<1){label.gameObject.SetActive(false);continue;}
@@ -57,6 +58,7 @@ namespace RoadsideHaven
                 back.rectTransform.sizeDelta=label.rectTransform.sizeDelta;back.raycastTarget=false;back.overflowMode=TextOverflowModes.Ellipsis;
                 label.gameObject.AddComponent<PhysicalWorldSign>().Configure(label,back,region?550:npc?18:room?30:65);
             }
+            RoadClearance.ClearSigns(transform);
         }
         private static void Box(Transform parent,string name,Vector3 position,Vector3 scale,Material material)
         {

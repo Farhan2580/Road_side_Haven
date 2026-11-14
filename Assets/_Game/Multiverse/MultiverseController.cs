@@ -21,12 +21,13 @@ namespace RoadsideHaven
         private bool panel;
         private readonly float[] encounterTimers = new float[4];
         public string Status => message;
+        public void OffsetPortal(Vector3 delta){portalPosition+=delta;}
         public bool IsPortalPanelOpen => panel;
         public void ClosePortal()=>panel=false;
         public void TogglePortal(){if(!AtPortal)return; motel.GetComponentInChildren<BusinessEmpireController>(true)?.ClosePanel(); motel.GetComponentInChildren<OwnerLifeController>(true)?.ClosePanel();panel=!panel;}
         private int threat, defenses;
         private int neonHeat;
-        private string message = "Walk to the purple portal (-16,-6), then press T.";
+        private string message = "Walk to the purple portal, then press T.";
         public UniverseId Current => ledger == null ? UniverseId.Normal : ledger.Current;
         public float RoomMultiplier => Current == UniverseId.Neon ? (neonHeat > 0 ? 1.5f : 2f) : Current == UniverseId.Apocalypse ? (threat >= 3 ? .5f : 1.3f) : Current == UniverseId.Fantasy ? 1.8f : 1f;
         public Wallet WalletFor(int universe) => ledger.GetWallet((UniverseId)universe);

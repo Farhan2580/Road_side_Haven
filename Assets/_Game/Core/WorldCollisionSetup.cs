@@ -14,6 +14,7 @@ namespace RoadsideHaven
         }
         public static int Apply(Transform root,bool addCarving)
         {
+            if(!Application.isPlaying)RoadClearance.Resolve(root);
             RoadMarkingCleanup.RemoveStopLines(root);
             RoadMarkingCleanup.FlattenCrossings(root);
             var roadSurface=root.GetComponent<RoadSurfacePhysics>();
@@ -29,6 +30,7 @@ namespace RoadsideHaven
                 }
             foreach(var renderer in root.GetComponentsInChildren<MeshRenderer>(true))
             {
+                if(renderer.GetComponentInParent<AirportOperations>()!=null||renderer.GetComponentInParent<MotelDistrictArt>()!=null)continue;
                 if(renderer.GetComponent<TMPro.TMP_Text>()!=null||renderer.GetComponentInParent<PhysicalWorldSign>()!=null)continue;
                 if(roadSurface!=null&&roadSurface.HasSurface&&TownPopulationController.RoadName(renderer.name))
                 {foreach(var collider in renderer.GetComponents<Collider>())collider.enabled=false;continue;}

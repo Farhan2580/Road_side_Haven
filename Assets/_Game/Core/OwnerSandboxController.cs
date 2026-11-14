@@ -36,18 +36,27 @@ namespace RoadsideHaven
         private string message = "P: walk as owner | E: enter/exit nearby vehicle | G: interact";
         private Material skin, clothes;
         private PcThirdPersonCamera pcCamera;
+        private ShopHUD shopView;
+        private MultiverseController portalView;
+        private OwnerLifeController lifePanel;
+        private CompactGameHUD compactHud;
+        private BusinessEmpireController empirePanel;
+        private void CachePanels(){if(motel==null)return;shopView=motel.GetComponentInChildren<ShopHUD>(true);portalView=motel.GetComponentInChildren<MultiverseController>(true);lifePanel=motel.GetComponentInChildren<OwnerLifeController>(true);compactHud=motel.GetComponent<CompactGameHUD>();empirePanel=motel.GetComponentInChildren<BusinessEmpireController>(true);}
         [SerializeField,Min(.1f)] private float jumpHeight=1.1f;
         public string Status => message;
         public void ToggleWalking() { if (!driving.IsDriving) SetWalking(!walking); }
         public void UseNearby() { if (walking) Interact(); }
         public bool IsWalking => walking;
         public bool HasSupplyCargo => cargo;
+        public void OffsetSupplier(Vector3 delta){supplier+=delta;}
+        public void OffsetDelivery(Vector3 delta){delivery+=delta;}
 
         public void Configure(MotelGameRoot root, WorldDrivingController vehicles, IsometricCameraController camera)
-        { motel = root; shop = root.GetComponent<ShopController>(); driving = vehicles; mapCamera = camera; }
+        { motel = root; shop = root.GetComponent<ShopController>(); driving = vehicles; mapCamera = camera; CachePanels(); }
 
         private void Start()
         {
+            CachePanels();
             character = GetComponent<CharacterController>();
             character.detectCollisions=true;character.enableOverlapRecovery=true;character.skinWidth=.035f;
             character.stepOffset=.22f;character.slopeLimit=45f;character.minMoveDistance=0;
@@ -87,15 +96,15 @@ namespace RoadsideHaven
 
         private void Update()
         {
-            var shopView = motel == null ? null : motel.GetComponentInChildren<ShopHUD>(true);
+
             if (shopView != null && shopView.IsOpen) { planarVelocity=Vector3.zero; return; }
             if (walking && mapCamera != null) mapCamera.SetModalInputBlocked(true);
-            var portalView = motel == null ? null : motel.GetComponentInChildren<MultiverseController>(true);
+
             if (portalView != null && portalView.IsPortalPanelOpen) { planarVelocity=Vector3.zero; return; }
-            var lifePanel = motel.GetComponentInChildren<OwnerLifeController>(true);
+
             if (lifePanel != null && lifePanel.PanelOpen) { planarVelocity=Vector3.zero; return; }
-            if (motel.GetComponent<CompactGameHUD>()?.MenuOpen ?? false) { planarVelocity=Vector3.zero; return; }
-            if(motel.GetComponentInChildren<BusinessEmpireController>(true)?.PanelOpen ?? false){planarVelocity=Vector3.zero;return;}
+            if (compactHud?.MenuOpen ?? false) { planarVelocity=Vector3.zero; return; }
+            if(empirePanel?.PanelOpen ?? false){planarVelocity=Vector3.zero;return;}
             var keyboard = Keyboard.current;
             if (keyboard != null)
             {

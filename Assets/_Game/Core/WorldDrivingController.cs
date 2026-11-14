@@ -28,6 +28,7 @@ namespace RoadsideHaven
         public float ActiveVehicleCameraDistance { get { var box=ActiveVehicleTransform==null?null:ActiveVehicleTransform.GetComponent<BoxCollider>(); return box==null?9:Mathf.Max(9,box.size.z*ActiveVehicleTransform.lossyScale.z*.5f+6); } }
         public float ActiveVehicleCameraHeight { get { var box=ActiveVehicleTransform==null?null:ActiveVehicleTransform.GetComponent<BoxCollider>(); return box==null?1.7f:Mathf.Max(1.7f,box.size.y*ActiveVehicleTransform.lossyScale.y*.75f); } }
         public float ActiveVehicleYaw => ActiveVehicleTransform==null?0:ActiveVehicleTransform.eulerAngles.y+(ActiveVehicleTransform.GetComponent<EnterableVehicle>()?.ForwardSign<0?180:0);
+        public void OffsetWashLocation(Vector3 delta){washCenter+=delta;}
         public void ConfigureOwner(OwnerSandboxController player) => owner = player;
         private int active = -1;
         private float throttle, turn, washProgress;
@@ -37,6 +38,8 @@ namespace RoadsideHaven
         private string status = "Explore the village and city. Choose CAR or CNG.";
         private PcThirdPersonCamera pcCamera;
         private ShopHUD shopHud;
+        private CompactGameHUD compactHud;
+        private BusinessEmpireController empirePanel;
         private MotelHUD motelHud;
         private bool motelHudWasVisible;
         private Vector3[] startPositions;
@@ -51,7 +54,8 @@ namespace RoadsideHaven
 
         private void Start()
         {
-            owner = GetComponentInParent<MotelGameRoot>()?.GetComponentInChildren<OwnerSandboxController>(true);
+            var root=GetComponentInParent<MotelGameRoot>();compactHud=root==null?null:root.GetComponent<CompactGameHUD>();empirePanel=root==null?null:root.GetComponentInChildren<BusinessEmpireController>(true);
+            owner = root==null?null:root.GetComponentInChildren<OwnerSandboxController>(true);
             shopHud = GetComponentInParent<MotelGameRoot>()?.GetComponentInChildren<ShopHUD>(true);
             motelHud = GetComponentInParent<MotelGameRoot>()?.GetComponentInChildren<MotelHUD>(true);
             motelHudWasVisible = motelHud != null && motelHud.gameObject.activeSelf;
@@ -70,12 +74,12 @@ namespace RoadsideHaven
 
         private void Update()
         {
-            if(GetComponentInParent<MotelGameRoot>()?.GetComponentInChildren<BusinessEmpireController>(true)?.PanelOpen ?? false){throttle=turn=0;brake=true;return;}
+            if(empirePanel?.PanelOpen ?? false){throttle=turn=0;brake=true;return;}
             var keyboard = Keyboard.current;
             if (keyboard != null && keyboard.tabKey.wasPressedThisFrame)
                 SelectVehicle(active + 1 >= (vehicles == null ? 0 : vehicles.Length) ? -1 : active + 1);
             if (keyboard != null && keyboard.rKey.wasPressedThisFrame) ResetActiveVehicle();
-            if ((GetComponentInParent<MotelGameRoot>()?.GetComponent<CompactGameHUD>()?.MenuOpen ?? false) || (life != null && life.PanelOpen)) { throttle=turn=0; brake=true; return; }
+            if ((compactHud?.MenuOpen ?? false) || (life != null && life.PanelOpen)) { throttle=turn=0; brake=true; return; }
             if(pcCamera==null && Camera.main!=null)pcCamera=Camera.main.GetComponent<PcThirdPersonCamera>();
             if(pcCamera!=null&&pcCamera.InputBlocked){throttle=turn=0;brake=true;return;}
             throttle = 0;
