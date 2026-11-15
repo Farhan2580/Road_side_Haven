@@ -18,6 +18,8 @@ namespace RoadsideHaven
         [SerializeField, Min(0)] private float intensity = 3.5f;
         [SerializeField, Min(0)] private float emission = 3f;
         [SerializeField] private Color warmLight = new Color(1f, .76f, .43f);
+        private OwnerSandboxController owner;
+        private WorldDrivingController driving;
         private Light[] pool;
         private int[] nearest;
         private float[] distances;
@@ -90,7 +92,9 @@ namespace RoadsideHaven
             for (int i = 0; i < pool.Length; i++) { nearest[i] = -1; distances[i] = float.MaxValue; }
             if (night > .01f && fixtures != null && mapCamera != null)
             {
-                Vector3 focus = mapCamera.FocusPoint;
+                var root=GetComponentInParent<MotelGameRoot>();
+                if(root!=null){if(owner==null)owner=root.GetComponentInChildren<OwnerSandboxController>(true);if(driving==null)driving=root.GetComponentInChildren<WorldDrivingController>(true);}
+                Vector3 focus = driving!=null&&driving.IsDriving&&driving.ActiveVehicleTransform!=null?driving.ActiveVehicleTransform.position:owner!=null&&owner.IsWalking?owner.transform.position:mapCamera.FocusPoint;
                 for (int candidate = 0; candidate < fixtures.Length; candidate++)
                 {
                     if (fixtures[candidate] == null) continue;
