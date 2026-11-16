@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="480" viewBox="0 0 1280 480" role="img" aria-labelledby="title desc">
+  <title id="title">Roadside Haven</title>
+  <desc id="desc">A graphic cover with a turquoise city skyline, warm sunset, motel and a road. Build your business. Explore your city.</desc>
+  <defs>
+    <linearGradient id="sky" x2="1" y2="1"><stop stop-color="#0b1a24"/><stop offset="1" stop-color="#173d40"/></linearGradient>
+    <linearGradient id="sun" x2="0" y2="1"><stop stop-color="#f7d299"/><stop offset="1" stop-color="#f98c78"/></linearGradient>
+    <linearGradient id="fade"><stop stop-color="#0b1a24"/><stop offset="1" stop-color="#0b1a24" stop-opacity="0"/></linearGradient>
+    <pattern id="windows" width="20" height="24" patternUnits="userSpaceOnUse"><rect width="5" height="9" x="7" y="5" rx="1" fill="#b9e5d5" opacity=".45"/></pattern>
+    <clipPath id="frame"><rect x="1" y="1" width="1278" height="478" rx="26"/></clipPath>
+  </defs>
+  <g clip-path="url(#frame)">
+    <path fill="url(#sky)" d="M0 0h1280v480H0z"/>
+    <circle cx="1036" cy="171" r="105" fill="url(#sun)"/>
+    <g fill="none" stroke="#90cabc" stroke-opacity=".08">
+      <path d="M0 80h1280M0 160h1280M0 240h1280M0 320h1280M0 400h1280M160 0v480M320 0v480M480 0v480M640 0v480M800 0v480M960 0v480M1120 0v480"/>
+    </g>
+    <g fill="#20434a">
+      <path d="M670 326V199h46v127M724 326V151h62v175M797 326V98h55v228M866 326V182h57v144M935 326V133h49v193M995 326V207h80v119M1087 326V161h63v165M1162 326V225h85v101"/>
+    </g>
+    <g fill="url(#windows)">
+      <path d="M729 162h52v153h-52zM802 110h45v205h-45zM872 192h45v123h-45zM941 144h37v171h-37zM1093 172h51v143h-51z"/>
+    </g>
+    <path d="M0 331c300-34 480 38 713-2 200-35 386 20 567-5v156H0z" fill="#102a2f"/>
+    <g transform="translate(887 289)">
+      <rect width="248" height="67" rx="3" fill="#d5c6a6"/>
+      <path d="M-9-7h266v14H-9z" fill="#e1bc7d"/>
+      <path d="M15 20h37v47H15zM70 20h37v47H70zM125 20h37v47h-37zM180 20h37v47h-37z" fill="#173b40"/>
+      <path d="M24 25h20v17H24zM79 25h20v17H79zM134 25h20v17h-20zM189 25h20v17h-20z" fill="#83b4b3"/>
+      <path d="M0 49h248v5H0z" fill="#b09672"/>
+      <rect x="71" y="-41" width="108" height="29" rx="4" fill="#0d2229" stroke="#e1bc7d"/>
+      <text x="125" y="-21" text-anchor="middle" fill="#f0d5a8" font-family="Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="4">HAVEN</text>
+    </g>
+    <g fill="#0b2027" stroke="#0b2027" stroke-linecap="round">
+      <path d="M1182 354q-8-67 2-127" fill="none" stroke-width="9"/>
+      <path d="M1184 230q-45-37-69-3 37-13 69 3M1184 230q36-48 66-9-35-11-66 9M1184 230q-9-47-37-38 28 12 37 38M1184 230q27-22 39 9-23-13-39-9"/>
+    </g>
+    <path d="M0 385h1280v95H0z" fill="#0a171f"/>
+    <path d="M0 394h1280M0 467h1280" stroke="#35505a" stroke-width="2"/>
+    <path d="M0 432h1280" stroke="#e1bc7d" stroke-opacity=".6" stroke-width="3" stroke-dasharray="40 30"/>
+    <path fill="url(#fade)" d="M0 0h850v480H0z"/>
+    <rect x="55" y="58" width="173" height="29" rx="14" fill="#1e4245" stroke="#3e6b66"/>
+    <circle cx="72" cy="72.5" r="4" fill="#8ad7b9"/>
+    <text x="85" y="77" fill="#d5ece1" font-family="Arial,sans-serif" font-size="11" letter-spacing="2">OPEN WORLD / INDIE</text>
+    <g font-family="Arial,Helvetica,sans-serif">
+      <text x="51" y="184" fill="#f4ebd8" font-size="79" font-weight="800" letter-spacing="-3">ROADSIDE</text>
+      <text x="51" y="263" fill="#e1bc7d" font-size="79" font-weight="800" letter-spacing="-3">HAVEN</text>
+      <text x="56" y="309" fill="#c0d6d2" font-size="21">Build your business. Explore your city.</text>
+      <path d="M56 343h38" stroke="#ef967e" stroke-width="3"/>
+      <text x="106" y="348" fill="#8eb4b1" font-size="12" letter-spacing="3">MOTEL LIFE. CITY LIGHTS. NEW DIMENSIONS.</text>
+      <text x="56" y="460" fill="#93b3b5" font-size="11" letter-spacing="3">UNITY 6 / PC + ANDROID BROWSER</text>
+      <text x="1224" y="460" text-anchor="end" fill="#93b3b5" font-size="11" letter-spacing="3">PLAYABLE PROTOTYPE</text>
+    </g>
+  </g>
+  <rect x="1" y="1" width="1278" height="478" rx="26" fill="none" stroke="#385152" stroke-width="2"/>
+</svg>

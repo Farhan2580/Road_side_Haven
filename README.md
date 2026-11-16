@@ -1,73 +1,214 @@
-# Roadside Haven
+<div align="center">
 
-[Play the browser demo](https://farhan2580.github.io/Road_side_Haven/) · PC keyboard/mouse and Android touch controls
+<img src="docs/media/cover.svg" alt="Roadside Haven — build your business, explore your city" width="100%" />
 
-A Unity PC/laptop prototype combining motel and shop management with an open driving world.
+### One motel. A whole city of possibilities.
 
-## Run
+Run the reception. Hit the road. Build a business empire across dimensions.
 
-1. Open the project with **Unity 6000.3.28f1** and wait for import/compilation.
-2. Open `Assets/_Game/Generated/RoadsideHavenPrototype.unity`.
-3. Use **Roadside Haven > Apply Visual Upgrade** and save the scene to include generated additions in builds.
-4. Press Play. Editor Play Mode also previews additions automatically.
+**[▶ PLAY THE LIVE DEMO](https://farhan2580.github.io/Road_side_Haven/)** &nbsp; · &nbsp; **[Latest releases](https://github.com/Farhan2580/Road_side_Haven/releases)** &nbsp; · &nbsp; **[Report an issue](https://github.com/Farhan2580/Road_side_Haven/issues)**
 
-If the scene is missing, use **Roadside Haven > Create or Update Prototype**. Keep custom work outside generated layers.
+![Unity 6](https://img.shields.io/badge/Unity-6_%C2%B7_6000.3.28f1-101f25?style=for-the-badge&logo=unity&logoColor=ffffff)
+![Rendering](https://img.shields.io/badge/Rendering-URP-173d40?style=for-the-badge)
+![Platforms](https://img.shields.io/badge/Play-PC_%2B_Android_Browser-e1bc7d?style=for-the-badge&labelColor=101f25&color=e1bc7d)
+![Development](https://img.shields.io/badge/Status-Playable_Prototype-ff9279?style=for-the-badge&labelColor=101f25)
 
-## Web demo and automatic updates
+[Explore](#the-world-of-roadside-haven) · [How to play](#jump-in) · [Controls](#take-control) · [Development](#build-it-yourself)
 
-The public demo is hosted at [farhan2580.github.io/Road_side_Haven](https://farhan2580.github.io/Road_side_Haven/). Play in a desktop browser or Android Chrome without installing Unity. On a phone, turn the screen sideways: the left joystick moves/steers, swiping the right side turns the camera, and the action buttons support jumping, running, entering/exiting cars, gas, reverse and braking. Menu and Back open/close feature panels.
+</div>
 
-`Publish browser demo` deploys a tested WebGL export from a GitHub Release. To update this way, zip the **contents** of `Builds/WebGL` so `index.html` is at the archive root, name it `RoadsideHaven-WebGL.zip`, attach it to a release whose tag begins `web-demo-`, then publish the release. The workflow validates the files and updates the same Pages URL. Existing releases also work through **Actions > Publish browser demo > Run workflow**, using the release tag.
+---
 
-For automatic **source-push builds**, `Web demo` builds the saved prototype scene whenever game changes are pushed to `main`, once Unity cloud activation is configured. Without activation, that workflow skips the build and leaves the current published demo online. Failed builds also leave the previous demo available.
+**Roadside Haven** is a single-player Unity game prototype that brings motel management, third-person exploration and an open driving world together. You are the owner: welcome guests, clean rooms, stock your shop and leave the front desk to explore the town yourself.
 
-One-time repository setup:
+The visual direction is **semi-realistic stylized**: vivid environments, modern districts, roadside businesses and a world that changes from day to night. The current demo uses procedural and primitive-based 3D art while the world is built out area by area.
 
-1. Under **Settings > Pages > Build and deployment**, select **GitHub Actions** as the source.
-2. Follow [GameCI's Personal license activation guide](https://game.ci/docs/github/activation/) for the Unity account used for builds. Under **Settings > Secrets and variables > Actions**, add repository secrets named `UNITY_LICENSE` (the license file contents), `UNITY_EMAIL` and `UNITY_PASSWORD`. Add these directly in GitHub, never to source files. This workflow uses Personal license activation; paid/floating licenses require the matching GameCI configuration.
-3. Open **Actions > Web demo > Run workflow** after adding the secrets. Subsequent game pushes to `main` run it automatically. Save scene changes before committing; Editor-only previews are not included. Local-build release publishing does not require these Unity secrets.
+## Jump in
 
-The browser demo uses single-threaded WebGL, gzip decompression fallback for static hosting, hashed assets, a loading screen and fullscreen controls. PC defaults to **Visuals > Sharp**: full render scale, up to 2x display pixel density and 2x MSAA. Phones default to Performance, a 30 FPS target and a shorter view distance; the Visuals selector remains available inside touch fullscreen. Android loads ETC2 texture data while desktop loads DXT data, sharing the engine download when compatible. Balanced and Performance reduce canvas resolution without restarting. Device performance varies; phone controls are tested with Android browser emulation and Unity physics tests. GitHub Pages supports a published site up to [1 GB](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits); the workflow checks the exported size before deploying.
+**[Open the game in your browser →](https://farhan2580.github.io/Road_side_Haven/)**
 
-For a local export, install **Web Build Support** for Unity **6000.3.28f1** in Unity Hub, then use **Roadside Haven > Web Demo > Build Browser Demo**. With Node.js installed, run `node scripts/serve-web-demo.mjs` and open `http://127.0.0.1:8080/`. Double-clicking `index.html` will not run Unity Web builds. Exported files and local license files are ignored by Git.
+| On your computer | On your Android phone |
+| :--- | :--- |
+| Open the demo, press **Play**, then click the game to focus it. | Open the demo in **Chrome**, turn your phone sideways and press **Play**. |
+| Use the keyboard to move and the mouse to look around. | Move with the left joystick and swipe the right side to look around. |
+| Start with **Sharp** visuals; choose Balanced or Performance if needed. | **Performance** is selected automatically. Change Visuals whenever you like. |
 
-## Controls
+No Unity installation is needed to play. The first launch downloads the game, so allow time for the loading bar to finish. This is a browser demo; an Android APK is not included.
 
-| Key | Action |
-| --- | --- |
-| WASD / arrows | Move or drive |
-| Mouse / scroll | Look / camera distance |
-| Shift | Sprint |
-| Space | Jump / vehicle brake |
-| E (or F) / G | Enter-exit nearby vehicle / nearby work |
-| M / P | Management map / on foot |
-| J / L | Garage and quests / NPC dialogue |
-| T / B | Dimensional portal / business portfolio |
-| R / Escape | Reset vehicle / release cursor and close menus |
+> **Prototype note:** progress resets when the game reloads. Phone controls have been checked in Android browser emulation; performance on a physical phone depends on the device.
 
-Click the Game view for keyboard focus. MENU contains actions and controls help. F6/F7 preview sunset/night, F8 changes season, and F9 changes the management camera view.
+## Inside the demo
 
-## Features
+<table>
+  <tr>
+    <td width="50%"><img src="docs/media/desktop-gameplay.png" alt="Desktop gameplay showing the owner outside the motel reception and garage" width="100%" /></td>
+    <td width="50%"><img src="docs/media/android-driving.png" alt="Driving in the live demo with Android touch steering, gas, brake and vehicle controls" width="100%" /></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Your motel. Your starting point.</strong><br />Third-person exploration on desktop.</td>
+    <td align="center"><strong>Take the city for a drive.</strong><br />Touch controls in Android browser emulation.</td>
+  </tr>
+</table>
 
-- Protected junction signals (red/amber/green and a pedestrian phase), zebra crossings, 3m sidewalks, jogging citizens and oak/pine/palm avenue trees. AI traffic obeys stop lines; pedestrians use sidewalk/corner routes and wait for crossing clearance.
+<sub>Actual captures from the published demo. The cover artwork is a graphic illustration.</sub>
 
-- Persistent town traffic: up to 48 cars, two buses, 96 citizens and 8 students across the road network, with separated safe spawns and full vehicle obstacle checks. Road profiles use 12m highways, 8m city streets and 5m dirt roads. Students use school/college stops; workers and doctors commute, police patrol by stations/roadside boxes. E takes over buses; school service resumes after exiting. This is a finite prototype population; medical treatment, arrests and full building interiors are not implemented.
-- Guest check-in, room cleaning, checkout, shop stock and scanning.
-- Third-person walking, vehicle chase camera, car/CNG/truck ownership and upgrades.
-- Truck deliveries, NPC quests, relationships, reputation and optional conflict events.
-- A 2 km x 2 km regional blockout, solid-world collision repair and framed signs.
-- Modern downtown high-rises, restaurant plazas and five original modern car designs; E enters any nearby vehicle.
-- Off-road driving and small curb climbing with collision-tested vehicle movement.
-- Six-season visuals, street/building/garden lights and an 80% day / 20% night cycle.
-- Four dimensional overlays, separate wallets and cross-universe item trading.
-- Business purchases, unlocks, upgrades, safe income and fictional bank investments.
+## The world of Roadside Haven
 
-Gameplay settings are in `Assets/_Game/Generated/HotelSettings.asset`. Business tuning is in `Assets/_Game/Business/Configuration/BusinessCatalog.asset` after installation.
+| Experience | What you can do |
+| :--- | :--- |
+| 🏨 **Life behind the front desk** | Check in guests, assign rooms, clean up after checkout and keep the motel running. |
+| 🛒 **Your own roadside shop** | Manage stock, scan products and handle customers alongside the motel business. |
+| 🚗 **Leave the desk behind** | Walk in third person, enter nearby cars, CNGs, trucks or buses, and explore with a chase camera. |
+| 📦 **Work around town** | Bring in supplies, take NPC quests and build relationships and reputation. |
+| 🏙️ **A growing open world** | Explore a 2 km × 2 km regional base with modern downtown blocks, restaurant plazas, village areas and roadside districts. |
+| 🚦 **Streets with a routine** | Encounter traffic signals, pedestrian crossings, sidewalks, commuters, school transport and police patrols. |
+| 🌅 **A changing atmosphere** | See seasonal visuals and street, building and garden lighting, with an 80% day / 20% night cycle. |
+| 🏦 **Beyond one business** | Purchase and upgrade businesses, collect income and unlock more of the business portfolio. |
+| 🔮 **Four dimensions** | Visit Normal, Neon, Apocalypse and Fantasy overlays with separate wallets and cross-universe item trading. |
 
-## Status
+The dimensions currently share the same physical map. Town activity is a finite simulation; this demo does not include complete building interiors, medical treatment, arrests or full combat. Save/load and player-controlled helicopter flight are not implemented.
 
-This is a primitive-based, single-player prototype. Progress resets on Play; save/load is not implemented. Dimensions share the physical map. Regional properties mostly use exterior/economic representations; full combat, helicopter flights, refueling and complete city simulation are not implemented.
+## Take control
 
-Runtime/Editor C# compilation, isolated native vehicle physics and town route/spawn regression checks have passed. Full-scene Unity Play Mode, final visual placement and laptop performance still require validation. Run the tests under `Assets/_Game/Tests/Editor` using Unity Test Runner.
+### PC / laptop
 
-Assets and their `.meta` files, Packages and ProjectSettings are versioned. Local caches, recovery backups and generated IDE files are ignored. Bundled third-party resources retain their respective notices.
+| Input | Action |
+| :--- | :--- |
+| **W A S D** / arrow keys | Walk or drive |
+| **Mouse** / scroll wheel | Look around / adjust camera distance |
+| **Shift** | Sprint |
+| **Space** | Jump on foot / brake while driving |
+| **E** or **F** | Enter or exit a nearby vehicle |
+| **G** | Interact with nearby work or services |
+| **M** or **P** | Switch between the management map and walking |
+| **J** / **L** | Garage and quests / NPC dialogue |
+| **T** / **B** | Dimensional portal / business portfolio |
+| **R** | Reset the active vehicle |
+| **Escape** | Release the cursor and close menus |
+
+**MENU** contains actions and controls help. Stop the vehicle before getting out. Developer preview keys: **F6** sunset, **F7** night, **F8** season and **F9** management camera view.
+
+### Android / touch
+
+| Control | Action |
+| :--- | :--- |
+| **Left joystick** | Walk on foot / steer while driving |
+| **Swipe on the right** | Turn the camera |
+| **Run** + joystick / **Jump** | Sprint / jump |
+| **Enter car** / **Exit car** | Use a nearby vehicle / leave it once stopped |
+| **Gas** / **Reverse** / **Brake** | Accelerate, reverse and stop |
+| **Use** / **Talk** | Nearby interaction / NPC dialogue |
+| **Map** / **Menu** / **Back** | Change view, open actions or close a panel |
+| **Reset** | Reset the active vehicle |
+
+Touch steering, gas and camera movement support separate fingers at the same time. Use **Fullscreen** for more screen space; the controls stay visible.
+
+## Build it yourself
+
+**Editor:** Unity **6000.3.28f1** · **Renderer:** Universal Render Pipeline · **Language:** C#
+
+1. Clone this repository and open the project through Unity Hub.
+2. Wait for package import and script compilation to finish.
+3. Open [`RoadsideHavenPrototype.unity`](Assets/_Game/Generated/RoadsideHavenPrototype.unity).
+4. Choose **Roadside Haven → Apply Visual Upgrade**, then save the scene to include generated additions in builds.
+5. Press **Play**.
+
+If the scene is missing, choose **Roadside Haven → Create or Update Prototype**. Keep custom work outside the generated layers. Editor previews can create additions during Play Mode; save their Edit Mode versions before building.
+
+<details>
+<summary><strong>Project layout & tuning</strong></summary>
+
+| Location | Purpose |
+| :--- | :--- |
+| [`Assets/_Game/Core`](Assets/_Game/Core) | Player movement, driving, cameras and world systems |
+| [`Assets/_Game/Hotel`](Assets/_Game/Hotel) · [`Shop`](Assets/_Game/Shop) | Motel operations and shop gameplay |
+| [`Assets/_Game/Business`](Assets/_Game/Business) · [`Multiverse`](Assets/_Game/Multiverse) | Business progression and dimensional systems |
+| [`Assets/_Game/AI`](Assets/_Game/AI) · [`Town`](Assets/_Game/Town) | Vehicles, citizens and town activity |
+| [`Assets/_Game/Editor`](Assets/_Game/Editor) | World builders, installers and browser export tools |
+| [`Assets/_Game/Tests/Editor`](Assets/_Game/Tests/Editor) | Unity regression and physics tests |
+| [`Assets/WebGLTemplates/RoadsideHaven`](Assets/WebGLTemplates/RoadsideHaven) | Browser loading screen, visuals settings and touch controls |
+| [`scripts`](scripts) · [`.github/workflows`](.github/workflows) | Local preview, deployment checks and GitHub Pages workflows |
+
+Tune motel gameplay in [`HotelSettings.asset`](Assets/_Game/Generated/HotelSettings.asset) and business progression in [`BusinessCatalog.asset`](Assets/_Game/Business/Configuration/BusinessCatalog.asset) after installation.
+
+Assets and their `.meta` files, Packages and ProjectSettings are versioned. Unity caches, exported builds, local backups and IDE-generated project files are ignored.
+
+</details>
+
+<details>
+<summary><strong>Export & preview the browser game</strong></summary>
+
+1. In Unity Hub, add **Web Build Support** to Unity **6000.3.28f1**.
+2. In the Editor, choose **Roadside Haven → Web Demo → Build Browser Demo**.
+3. With Node.js installed, run:
+
+```sh
+node scripts/serve-web-demo.mjs
+```
+
+4. Open **http://127.0.0.1:8080/**.
+
+Serve the export over HTTP or HTTPS; opening `index.html` directly from disk will not run it.
+
+The export includes **DXT** texture data for desktop and **ETC2** for Android. The browser selects the appropriate data and shares the engine download when compatible. Static hosting uses gzip decompression fallback, hashed game assets and single-threaded WebGL.
+
+Desktop **Sharp** uses full render scale, up to 2× display pixel density and 2× MSAA. Phones default to **Performance**, a **30 FPS target** and a shorter view distance. Balanced and Performance reduce canvas resolution without restarting the game; the FPS target is not a guarantee on every device.
+
+</details>
+
+<details>
+<summary><strong>Publish updates to the live demo</strong></summary>
+
+**Tested local build → GitHub Release → GitHub Pages**
+
+1. Build and test the browser export.
+2. Zip the **contents** of `Builds/WebGL`, with `index.html` at the archive root, using forward-slash archive paths.
+3. Name the archive **`RoadsideHaven-WebGL.zip`** and attach it to a GitHub Release whose tag begins with **`web-demo-`**.
+4. Publish the release. The **Publish browser demo** workflow validates the archive and deploys it to the same live URL.
+
+Existing release builds can also be deployed from **Actions → Publish browser demo → Run workflow**, using the release tag. Pages must use **GitHub Actions** as its build source.
+
+**Automatic builds from source pushes**
+
+The **Web demo** workflow supports building saved game changes pushed to `main` after Unity cloud activation is configured. Follow [GameCI's Personal license activation guide](https://game.ci/docs/github/activation/), then add repository Actions secrets named `UNITY_LICENSE`, `UNITY_EMAIL` and `UNITY_PASSWORD` directly in GitHub. Paid or floating licenses need the corresponding GameCI setup.
+
+Without those activation secrets, the source-build workflow skips building and keeps the existing demo available. Release-based publishing does not require them. A failed build does not replace the current live game.
+
+</details>
+
+<details>
+<summary><strong>Validation & troubleshooting</strong></summary>
+
+The Android browser release was checked with **86 passing Unity tests**, **22 passing browser/deployment tests** and **one Windows-only symlink test skip**. Desktop Chrome and Android Chrome emulation both loaded the public demo successfully. Touch checks covered walking, vehicle entry, simultaneous steering/gas, braking, exiting, camera swipes and menu/back actions.
+
+Run Unity tests through **Window → General → Test Runner**, using the tests in `Assets/_Game/Tests/Editor`. Run browser tooling checks with:
+
+```sh
+node --test scripts/*.test.mjs
+node scripts/validate-web-build.mjs Builds/WebGL
+```
+
+| If you see… | Try this |
+| :--- | :--- |
+| Low frame rate | Select **Performance**, close background tabs and reduce other running apps. |
+| Soft or blurry graphics | Choose **Balanced** or **Sharp** if your device can handle it. |
+| No keyboard response | Click inside the game; press Escape to release the cursor. |
+| No touch controls after an update | Reload the page in Android Chrome and check that the latest demo has loaded. |
+| Vehicle will not exit | Brake to a stop and leave room beside the vehicle. |
+| Game fails to load | Reload, use a current browser with WebGL 2 support and check the connection. |
+
+Physical Android hardware testing, wider browser coverage and device-specific performance tuning remain ongoing work.
+
+</details>
+
+---
+
+<div align="center">
+
+**Built by [Farhan2580](https://github.com/Farhan2580) with Unity. Growing one district at a time.**
+
+Found something broken? [Open an issue](https://github.com/Farhan2580/Road_side_Haven/issues) with your device, browser, steps and a screenshot.
+
+<sub>Third-party resources retain their respective notices. See the repository files for applicable terms.</sub>
+
+</div>
