@@ -1,0 +1,71 @@
+name: Publish browser demo
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag containing RoadsideHaven-WebGL.zip (web-demo-...)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-browser-demo
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Validate the tested browser export
+    if: startsWith(github.event.release.tag_name || inputs.tag, 'web-demo-')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts
+            Assets/WebGLTemplates
+          persist-credentials: false
+
+      - name: Download the browser export
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'RoadsideHaven-WebGL.zip' --dir "$RUNNER_TEMP/web-demo"
+          unzip -q "$RUNNER_TEMP/web-demo/RoadsideHaven-WebGL.zip" -d "$RUNNER_TEMP/web-demo/site"
+
+      - name: Test deployment checks
+        run: node --test scripts/*.test.mjs
+
+      - name: Validate the exported game
+        run: node scripts/validate-web-build.mjs "$RUNNER_TEMP/web-demo/site"
+
+      - name: Upload the game for GitHub Pages
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ${{ runner.temp }}/web-demo/site
+
+  deploy:
+    name: Publish the playable game
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+      - name: Publish browser demo
+        id: deployment
+        uses: actions/deploy-pages@v4

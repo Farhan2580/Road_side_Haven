@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#132e32">
+  <meta name="description" content="Play the Roadside Haven open-world motel game prototype in your browser.">
+  <title>Roadside Haven — Play the demo</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23132e32'/%3E%3Ctext x='32' y='41' text-anchor='middle' fill='%23e1bc7d' font-family='serif' font-size='28'%3ERH%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <a class="brand" href="./" aria-label="Roadside Haven home"><span class="brand-mark">RH</span> ROADSIDE HAVEN</a>
+    <div class="toolbar"><span class="badge">BROWSER DEMO</span><label class="quality-setting"><span>Visuals</span><select id="visual-quality" aria-label="Graphics quality"><option value="sharp">Sharp</option><option value="balanced">Balanced</option><option value="performance">Performance</option></select></label><button id="fullscreen" type="button" disabled>Fullscreen</button></div>
+  </header>
+  <main id="game-shell">
+    <canvas id="unity-canvas" width="1280" height="720" tabindex="0" aria-label="Roadside Haven game. Click to control the character."></canvas>
+    <section id="welcome" aria-labelledby="welcome-title">
+      <div class="welcome-content">
+        <p class="eyebrow">WELCOME TO YOUR NEXT CHAPTER</p>
+        <h1 id="welcome-title">A roadside stop.<br><em>A world of possibilities.</em></h1>
+        <p class="description">Build your motel business, explore the city and take a drive through Roadside Haven.</p>
+        <button id="play" class="play" type="button">Play demo <span aria-hidden="true">↗</span></button>
+        <p class="device-note">Best on a laptop or desktop · Keyboard &amp; mouse</p>
+        <div id="loading" hidden><progress id="progress" max="1" value="0" aria-label="Game loading progress"></progress><p id="status" role="status" aria-live="polite">Preparing your world…</p></div>
+        <p id="error" role="alert" hidden></p>
+        <button id="retry" type="button" hidden>Reload demo</button>
+      </div>
+      <div class="road-art" aria-hidden="true"><span>HAVEN</span><i></i><i></i><i></i><i></i></div>
+    </section>
+  </main>
+  <footer>
+    <span>Single-player prototype · Progress resets when you reload.</span>
+    <details><summary>Controls</summary><div class="controls"><span><kbd>W A S D</kbd> Move / drive</span><span><kbd>Mouse</kbd> Look around</span><span><kbd>E</kbd> Enter / exit car</span><span><kbd>Shift</kbd> Sprint</span><span><kbd>Space</kbd> Jump / brake</span><span><kbd>M</kbd> Management map</span><span><kbd>Esc</kbd> Release cursor</span><span>Click the game to capture the mouse.</span></div></details>
+  </footer>
+  <script>
+    window.havenBuild = {
+      loaderUrl: "Build/{{{ LOADER_FILENAME }}}",
+      config: {
+        dataUrl: "Build/{{{ DATA_FILENAME }}}",
+        frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}",
+        codeUrl: "Build/{{{ CODE_FILENAME }}}",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "Roadside Haven",
+        productName: "Roadside Haven",
+        productVersion: "{{{ PRODUCT_VERSION }}}"
+      }
+    };
+  </script>
+  <script src="demo.js" defer></script>
+</body>
+</html>

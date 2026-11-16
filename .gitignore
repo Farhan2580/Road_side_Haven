@@ -40,6 +40,8 @@
 *.jks
 *.p12
 *.pfx
+*.ulf
+*.alf
 
 # OS files and packaged builds
 .DS_Store

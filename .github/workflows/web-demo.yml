@@ -1,0 +1,111 @@
+name: Web demo
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Assets/**'
+      - 'Packages/**'
+      - 'ProjectSettings/**'
+      - 'scripts/**'
+      - '.github/workflows/web-demo.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-demo-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  activation:
+    name: Check cloud build activation
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.activation.outputs.ready }}
+    steps:
+      - name: Check Unity activation secrets
+        id: activation
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        shell: bash
+        run: |
+          if [ -n "$UNITY_LICENSE" ] && [ -n "$UNITY_EMAIL" ] && [ -n "$UNITY_PASSWORD" ]; then
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            echo '::notice::Unity cloud activation is not configured. The published browser demo stays online. See README.md to enable source-push builds, or publish a web-demo release with a tested WebGL export.'
+          fi
+
+  build:
+    name: Build browser demo
+    needs: activation
+    if: needs.activation.outputs.ready == 'true'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    env:
+      UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+      UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          persist-credentials: false
+
+      - name: Check deployment tooling
+        run: node --test scripts/*.test.mjs
+
+      - name: Free runner space for the Unity editor image
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          df -h /
+
+      - name: Cache WebGL imports
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-WebGL-${{ hashFiles('ProjectSettings/ProjectVersion.txt') }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-WebGL-${{ hashFiles('ProjectSettings/ProjectVersion.txt') }}-
+
+      - name: Build the saved game scene
+        uses: game-ci/unity-builder@v4
+        with:
+          targetPlatform: WebGL
+          unityVersion: auto
+          buildMethod: RoadsideHaven.Editor.WebDemoBuild.BuildFromCommandLine
+          customParameters: -webDemoOutput build/WebGL
+          versioning: None
+
+      - name: Validate the published files
+        run: node scripts/validate-web-build.mjs build/WebGL
+
+      - name: Upload browser demo
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: build/WebGL
+
+  deploy:
+    name: Publish GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check Pages configuration
+        uses: actions/configure-pages@v5
+      - name: Publish the successful build
+        id: deployment
+        uses: actions/deploy-pages@v4
