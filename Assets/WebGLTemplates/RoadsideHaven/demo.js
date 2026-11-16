@@ -7,6 +7,7 @@
   const status = byId('status');
   const fullscreen = byId('fullscreen');
   const quality = byId('visual-quality');
+  const touchMode = Boolean(window.RoadsideTouchControls && window.RoadsideTouchControls.isTouchDevice());
   let instance;
 
   function pixelRatio() {
@@ -24,7 +25,11 @@
     if (canvas.height !== height) canvas.height = height;
   }
 
-  quality.value = 'sharp';
+  quality.value = touchMode ? 'performance' : 'sharp';
+  if (touchMode) {
+    document.body.classList.add('touch-mode');
+    document.querySelector('.device-note').textContent = 'Touch controls · Turn your phone sideways for a wider view';
+  }
   quality.addEventListener('change', resizeCanvas);
   window.addEventListener('resize', resizeCanvas);
   document.addEventListener('fullscreenchange', resizeCanvas);
@@ -34,13 +39,13 @@
   function fail(error) {
     console.error('Roadside Haven could not start:', error);
     byId('loading').hidden = true;
-    byId('error').textContent = 'The game could not start. Reload the demo, or try the latest desktop Chrome, Edge or Firefox with hardware acceleration enabled.';
+    byId('error').textContent = touchMode ? 'The game could not start. Reload this demo in the latest Android Chrome.' : 'The game could not start. Reload the demo, or try the latest desktop Chrome, Edge or Firefox with hardware acceleration enabled.';
     byId('error').hidden = false;
     byId('retry').hidden = false;
     play.hidden = true;
   }
 
-  play.addEventListener('click', () => {
+  play.addEventListener('click', async () => {
     play.disabled = true;
     play.hidden = true;
     try {
@@ -50,7 +55,13 @@
       const release = probe.getExtension('WEBGL_lose_context');
       if (release) release.loseContext();
       byId('loading').hidden = false;
-      const build = window.havenBuild;
+      if (touchMode) window.RoadsideTouchControls.fullscreen(byId('game-shell'));
+      let build = window.havenBuild;
+      if (touchMode) {
+        const response = await fetch('mobile-build.json', { cache: 'no-store' });
+        if (!response.ok) throw new Error('The phone build could not be downloaded.');
+        build = await response.json();
+      }
       const script = document.createElement('script');
       script.src = build.loaderUrl;
       script.onerror = () => fail(new Error('The game loader could not be downloaded.'));
@@ -73,12 +84,13 @@
           byId('welcome').hidden = true;
           fullscreen.disabled = false;
           canvas.focus();
+          if (touchMode) window.RoadsideTouchControls.attach(game, canvas);
         }).catch(fail);
       };
       document.body.appendChild(script);
     } catch (error) { fail(error); }
   });
-  fullscreen.addEventListener('click', () => { if (instance) instance.SetFullscreen(1); });
+  fullscreen.addEventListener('click', () => { if (instance) { if (touchMode) window.RoadsideTouchControls.fullscreen(byId('game-shell')); else instance.SetFullscreen(1); } });
   byId('retry').addEventListener('click', () => location.reload());
   canvas.addEventListener('click', () => canvas.focus());
 })();

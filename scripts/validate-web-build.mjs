@@ -26,6 +26,13 @@ export async function validateWebBuild(directory, { maxBytes = 1_000_000_000 } =
   for (const match of html.matchAll(/\bBuild\/([a-zA-Z0-9_.-]+)/g)) {
     if (!build.includes(match[1])) throw new Error(`index.html references a missing file: ${match[0]}`);
   }
+  if (html.includes('touch-controls.js')) {
+    const mobile = JSON.parse(await readFile(path.join(root, 'mobile-build.json'), 'utf8'));
+    for (const relative of [mobile.loaderUrl, mobile.config?.dataUrl, mobile.config?.codeUrl, mobile.config?.frameworkUrl, 'touch-controls.js']) {
+      if (typeof relative !== 'string' || !path.resolve(root, relative).startsWith(root + path.sep)) throw new Error('Invalid phone build manifest.');
+      if (!(await lstat(path.join(root, relative))).isFile()) throw new Error(`Missing phone runtime file: ${relative}`);
+    }
+  }
   return { bytes, runtimeFiles: build.length };
 }
 

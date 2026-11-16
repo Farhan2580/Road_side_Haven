@@ -48,3 +48,11 @@ test('rejects links in a Pages artifact', { skip: process.platform === 'win32' }
   await symlink(path.join(root, 'index.html'), path.join(root, 'link.html'));
   await assert.rejects(validateWebBuild(root), /cannot contain links/);
 });
+
+test('rejects a phone manifest pointing at a missing Android data file', async t => {
+  const root = await fixture(t);
+  await writeFile(path.join(root, 'index.html'), '<script src="touch-controls.js"></script>');
+  await writeFile(path.join(root, 'touch-controls.js'), '/* touch controls */');
+  await writeFile(path.join(root, 'mobile-build.json'), JSON.stringify({ loaderUrl: 'Build/game.loader.js', config: { dataUrl: 'Build/phone.data.unityweb', frameworkUrl: 'Build/a.framework.js.unityweb', codeUrl: 'Build/b.wasm.unityweb' } }));
+  await assert.rejects(validateWebBuild(root), /ENOENT/);
+});

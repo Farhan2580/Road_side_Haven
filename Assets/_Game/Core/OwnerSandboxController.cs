@@ -96,7 +96,7 @@ namespace RoadsideHaven
 
         private void Update()
         {
-
+            bool touchJump = MobileTouchInput.ConsumeJump();
             if (shopView != null && shopView.IsOpen) { planarVelocity=Vector3.zero; return; }
             if (walking && mapCamera != null) mapCamera.SetModalInputBlocked(true);
 
@@ -114,8 +114,8 @@ namespace RoadsideHaven
             }
             if (!walking) return;
             if(pcCamera!=null&&pcCamera.InputBlocked)return;
-            float x = 0;
-            float z = 0;
+            float x = MobileTouchInput.Enabled ? MobileTouchInput.Move.x : 0;
+            float z = MobileTouchInput.Enabled ? MobileTouchInput.Move.y : 0;
             if (keyboard != null)
             {
                 x += (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed ? 1 : 0) - (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed ? 1 : 0);
@@ -124,9 +124,9 @@ namespace RoadsideHaven
             Vector3 forward = mapCamera == null ? Vector3.forward : Vector3.ProjectOnPlane(mapCamera.transform.forward, Vector3.up).normalized;
             Vector3 right = Vector3.Cross(Vector3.up, forward);
             Vector3 move = Vector3.ClampMagnitude(right * x + forward * z, 1);
-            float speed = keyboard != null && keyboard.leftShiftKey.isPressed ? runSpeed : walkSpeed;
+            float speed = keyboard != null && keyboard.leftShiftKey.isPressed || MobileTouchInput.Enabled && MobileTouchInput.Sprint ? runSpeed : walkSpeed;
             if(character.isGrounded && fallSpeed<0)fallSpeed=-2f;
-            if(character.isGrounded && keyboard!=null && keyboard.spaceKey.wasPressedThisFrame)fallSpeed=Mathf.Sqrt(40f*jumpHeight);
+            if(character.isGrounded && (touchJump || keyboard!=null && keyboard.spaceKey.wasPressedThisFrame))fallSpeed=Mathf.Sqrt(40f*jumpHeight);
             fallSpeed=Mathf.Max(-35f,fallSpeed-20f*Time.deltaTime);
             planarVelocity=Vector3.MoveTowards(planarVelocity,move*speed,movementAcceleration*Time.deltaTime);
             character.Move((planarVelocity + Vector3.up * fallSpeed) * Time.deltaTime);

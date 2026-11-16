@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
@@ -72,18 +73,78 @@ namespace RoadsideHaven.Editor
 
             using (new WebDemoBuildQuality.Scope(WebDemoBuildQuality.ConfigureProfile()))
             {
-                var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
-                {
-                    scenes = new[] { ScenePath },
-                    locationPathName = destination,
-                    target = BuildTarget.WebGL,
-                    options = BuildOptions.None
-                });
-                if (report.summary.result != BuildResult.Succeeded)
-                    throw new BuildFailedException("Web demo build failed: " + report.summary.result + "; errors: " + report.summary.totalErrors);
+                BuildVariant(destination, WebGLTextureSubtarget.DXT);
+                string phoneOutput = destination + "-Android";
+                BuildVariant(phoneOutput, WebGLTextureSubtarget.ETC2);
+                ExportPhoneManifest(destination, phoneOutput);
             }
             File.WriteAllText(Path.Combine(destination, ".nojekyll"), string.Empty);
+            FingerprintTemplateAssets(destination);
             Debug.Log("Web demo ready at " + destination + ". Serve it over HTTP; index.html cannot run from file://.");
+        }
+
+        private static void BuildVariant(string destination, WebGLTextureSubtarget textures)
+        {
+            var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+            {
+                scenes = new[] { ScenePath }, locationPathName = destination,
+                target = BuildTarget.WebGL, subtarget = (int)textures, options = BuildOptions.None
+            });
+            if (report.summary.result != BuildResult.Succeeded)
+                throw new BuildFailedException("Web demo " + textures + " build failed: " + report.summary.result + "; errors: " + report.summary.totalErrors);
+        }
+
+        public static void FingerprintTemplateAssets(string destination)
+        {
+            string index = Path.Combine(destination, "index.html");
+            string html = File.ReadAllText(index);
+            using (var sha = System.Security.Cryptography.SHA256.Create())
+                foreach (string asset in new[] { "demo.js", "touch-controls.js", "style.css" })
+                {
+                    string hash = BitConverter.ToString(sha.ComputeHash(File.ReadAllBytes(Path.Combine(destination, asset)))).Replace("-", "").Substring(0, 12).ToLowerInvariant();
+                    html = html.Replace("\"" + asset + "\"", "\"" + asset + "?v=" + hash + "\"");
+                }
+            File.WriteAllText(index, html);
+        }
+
+        [Serializable] private sealed class PhoneConfig
+        {
+            public string dataUrl, frameworkUrl, codeUrl;
+            public string streamingAssetsUrl = "StreamingAssets";
+            public string companyName = "Roadside Haven", productName = "Roadside Haven", productVersion;
+        }
+        [Serializable] private sealed class PhoneManifest { public string loaderUrl; public PhoneConfig config; }
+
+        private static void ExportPhoneManifest(string desktop, string phone)
+        {
+            string html = File.ReadAllText(Path.Combine(phone, "index.html"));
+            string FileName(string key)
+            {
+                var match = Regex.Match(html, key + ":\\s*\"Build/([^\"]+)\"");
+                if (!match.Success) throw new BuildFailedException("Phone export is missing " + key);
+                return match.Groups[1].Value;
+            }
+            bool sharedRuntime = new[] { "loaderUrl", "frameworkUrl", "codeUrl" }.All(key => File.Exists(Path.Combine(desktop, "Build", FileName(key))));
+            string prefix = sharedRuntime ? "Build/" : "Mobile/Build/";
+            if (sharedRuntime)
+                File.Copy(Path.Combine(phone, "Build", FileName("dataUrl")), Path.Combine(desktop, "Build", FileName("dataUrl")), true);
+            else
+                foreach (string file in Directory.GetFiles(phone, "*", SearchOption.AllDirectories))
+                {
+                    string target = Path.Combine(desktop, "Mobile", Path.GetRelativePath(phone, file));
+                    Directory.CreateDirectory(Path.GetDirectoryName(target)); File.Copy(file, target, true);
+                }
+            var manifest = new PhoneManifest
+            {
+                loaderUrl = prefix + FileName("loaderUrl"),
+                config = new PhoneConfig
+                {
+                    dataUrl = prefix + FileName("dataUrl"), frameworkUrl = prefix + FileName("frameworkUrl"), codeUrl = prefix + FileName("codeUrl"),
+                    streamingAssetsUrl = sharedRuntime ? "StreamingAssets" : "Mobile/StreamingAssets", productVersion = PlayerSettings.bundleVersion
+                }
+            };
+            File.WriteAllText(Path.Combine(desktop, "mobile-build.json"), JsonUtility.ToJson(manifest, true));
+            Debug.Log("Android ETC2 export included; shared browser runtime: " + sharedRuntime);
         }
     }
 }

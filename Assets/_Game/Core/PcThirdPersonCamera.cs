@@ -33,7 +33,7 @@ namespace RoadsideHaven
         private bool originalVisible;
         private readonly RaycastHit[] hits=new RaycastHit[32];
         public bool InputBlocked => activeView && (ModalOpen || !Application.isFocused);
-        private bool LookBlocked => InputBlocked || released;
+        private bool LookBlocked => InputBlocked || (!MobileTouchInput.Enabled && released);
         private bool ModalOpen => (motel.GetComponentInChildren<BusinessEmpireController>(true)?.PanelOpen ?? false) ||
             (motel.GetComponent<CompactGameHUD>()?.MenuOpen ?? false) ||
             (motel.GetComponentInChildren<OwnerLifeController>(true)?.PanelOpen ?? false) ||
@@ -71,11 +71,17 @@ namespace RoadsideHaven
             }
             map.SetExternalView(true);lens.orthographic=false;lens.fieldOfView=fieldOfView;lens.nearClipPlane=.08f;
             bool blocked=LookBlocked;
-            Cursor.lockState=blocked?CursorLockMode.None:CursorLockMode.Locked;Cursor.visible=blocked;
+            Cursor.lockState=blocked||MobileTouchInput.Enabled?CursorLockMode.None:CursorLockMode.Locked;Cursor.visible=blocked||MobileTouchInput.Enabled;
             if(lastTarget!=target)
             {lastTarget=target;smoothedPivot=target.position+Vector3.up*(driving.IsDriving?driving.ActiveVehicleCameraHeight:1.35f);distance=driving.IsDriving?driving.ActiveVehicleCameraDistance:4.5f;}
             var mouse=Mouse.current;
-            if(!blocked&&mouse!=null)
+            var touchLook = MobileTouchInput.ConsumeLook();
+            if(!blocked && MobileTouchInput.Enabled)
+            {
+                if(touchLook.sqrMagnitude>.01f)lastLookTime=Time.unscaledTime;
+                yaw+=touchLook.x*.18f;pitch=Mathf.Clamp(pitch-touchLook.y*.18f,pitchLimits.x,pitchLimits.y);
+            }
+            else if(!blocked&&mouse!=null)
             {
                 var delta=mouse.delta.ReadValue();if(delta.sqrMagnitude>.01f)lastLookTime=Time.unscaledTime;yaw+=delta.x*sensitivity;pitch=Mathf.Clamp(pitch-delta.y*sensitivity,pitchLimits.x,pitchLimits.y);
                 var zoom=driving.IsDriving?new Vector2(Mathf.Max(drivingZoom.x,driving.ActiveVehicleCameraDistance-3),Mathf.Max(drivingZoom.y,driving.ActiveVehicleCameraDistance+8)):walkingZoom;

@@ -85,12 +85,21 @@ namespace RoadsideHaven
             throttle = 0;
             turn = 0;
             brake = false;
-            if (active < 0 || keyboard == null) return;
+            if (active < 0) return;
+            if (keyboard != null)
+            {
             throttle += (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed ? 1 : 0) -
                 (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed ? 1 : 0);
             turn += (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed ? 1 : 0) -
                 (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed ? 1 : 0);
             brake |= keyboard.spaceKey.isPressed;
+            }
+            if (MobileTouchInput.Enabled)
+            {
+                throttle = Mathf.Clamp(throttle + MobileTouchInput.Throttle, -1, 1);
+                turn = Mathf.Clamp(turn + MobileTouchInput.Move.x, -1, 1);
+                brake |= MobileTouchInput.Brake;
+            }
         }
 
         private void FixedUpdate()

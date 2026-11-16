@@ -79,7 +79,8 @@ namespace RoadsideHaven
             if(current==null)return;if(previous==null){previous=current;return;}
             if(previous==current)return;previous=current;if(toast!=null){toast.text=current;toastUntil=Time.unscaledTime+5f;}
         }
-        private void Close(){if(menu!=null)menu.SetActive(false);if(help!=null)help.SetActive(false);}
+        public void Close(){if(menu!=null)menu.SetActive(false);if(help!=null)help.SetActive(false);}
+        public void ToggleMenu(){bool open=!MenuOpen;Close();if(menu!=null)menu.SetActive(open);}
         private static RectTransform Rect(Transform parent,string name,Vector2 anchor,Vector2 position,Vector2 size)
         {var r=new GameObject(name,typeof(RectTransform)).GetComponent<RectTransform>();r.SetParent(parent,false);r.anchorMin=r.anchorMax=anchor;r.anchoredPosition=position;r.sizeDelta=size;return r;}
         private static void Background(RectTransform rect){rect.gameObject.AddComponent<Image>().color=new Color(.035f,.09f,.105f,.97f);}

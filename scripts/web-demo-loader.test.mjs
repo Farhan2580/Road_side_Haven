@@ -4,11 +4,12 @@ import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 
 const source = await readFile(new URL('../Assets/WebGLTemplates/RoadsideHaven/demo.js', import.meta.url), 'utf8');
-function page({ webgl = true, protocol = 'https:', bootError = false, dpr = 3 } = {}) {
+function page({ webgl = true, protocol = 'https:', bootError = false, dpr = 3, touch = false, mobileOk = true } = {}) {
   const elements = new Map();
   let loader;
   let starts = 0;
   let fullscreens = 0;
+  let touchAttached = false;
   const element = id => {
     if (!elements.has(id)) elements.set(id, { hidden: false, disabled: true, listeners: {},
       addEventListener(event, callback) { this.listeners[event] = callback; }, focus() { this.focused = true; },
@@ -16,12 +17,13 @@ function page({ webgl = true, protocol = 'https:', bootError = false, dpr = 3 } 
     return elements.get(id);
   };
   const scope = {
-    window: { devicePixelRatio: dpr, addEventListener() {}, havenBuild: { loaderUrl: 'Build/game.loader.js', config: { dataUrl: 'Build/game.data.unityweb' } } },
-    document: { getElementById: element, addEventListener() {}, createElement: type => type === 'canvas' ? { getContext: () => webgl ? { getExtension: () => null } : null } : {}, body: { appendChild: script => { loader = script; } } },
+    window: { devicePixelRatio: dpr, addEventListener() {}, RoadsideTouchControls: { isTouchDevice: () => touch, fullscreen() {}, attach() { touchAttached = true; } }, havenBuild: { loaderUrl: 'Build/game.loader.js', config: { dataUrl: 'Build/game.data.unityweb' } } },
+    document: { getElementById: element, querySelector: element, addEventListener() {}, createElement: type => type === 'canvas' ? { getContext: () => webgl ? { getExtension: () => null } : null } : {}, body: { classList: { add() {} }, appendChild: script => { loader = script; } } },
+    fetch: async () => ({ ok: mobileOk, json: async () => ({ loaderUrl: 'Mobile/Build/android.loader.js', config: { dataUrl: 'Build/android.data.unityweb' } }) }),
     location: { protocol, reload() {} }, WebAssembly: {}, console: { error() {}, warn() {} },
     createUnityInstance: async (canvas, config, progress) => {
       starts++;
-      assert.equal(config.devicePixelRatio, Math.min(dpr, 2));
+      assert.equal(config.devicePixelRatio, touch ? Math.max(.5, Math.min(dpr * .67, 1)) : Math.min(dpr, 2));
       assert.equal(config.matchWebGLToCanvasSize, false);
       assert.equal(config.cacheControl('Build/game.data.unityweb'), 'must-revalidate');
       if (bootError) throw new Error('WASM failed');
@@ -30,7 +32,7 @@ function page({ webgl = true, protocol = 'https:', bootError = false, dpr = 3 } 
     }
   };
   vm.runInNewContext(source, scope);
-  return { element, get loader() { return loader; }, get starts() { return starts; }, get fullscreens() { return fullscreens; } };
+  return { element, get loader() { return loader; }, get starts() { return starts; }, get fullscreens() { return fullscreens; }, get touchAttached() { return touchAttached; } };
 }
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
@@ -109,4 +111,21 @@ test('quality changes resize the render target without downloading or restarting
   quality.value = 'sharp'; quality.listeners.change();
   assert.equal(p.element('unity-canvas').width, 1600);
   assert.equal(p.starts, 1);
+});
+
+test('phones select the Android export and attach touch controls after Unity is ready', async () => {
+  const p = page({ touch: true });
+  assert.equal(p.element('visual-quality').value, 'performance');
+  assert.equal(p.element('unity-canvas').width, 800);
+  await p.element('play').listeners.click();
+  assert.equal(p.loader.src, 'Mobile/Build/android.loader.js');
+  assert.equal(p.touchAttached, false);
+  p.loader.onload(); await settle();
+  assert.equal(p.touchAttached, true); assert.equal(p.starts, 1);
+});
+
+test('a missing phone export gives a recovery message', async () => {
+  const p = page({ touch: true, mobileOk: false });
+  await p.element('play').listeners.click();
+  assert.equal(p.loader, undefined); assert.equal(p.element('error').hidden, false);
 });

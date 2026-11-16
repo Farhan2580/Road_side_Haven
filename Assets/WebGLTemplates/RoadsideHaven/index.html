@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#132e32">
   <meta name="description" content="Play the Roadside Haven open-world motel game prototype in your browser.">
   <title>Roadside Haven — Play the demo</title>
@@ -16,6 +16,23 @@
   </header>
   <main id="game-shell">
     <canvas id="unity-canvas" width="1280" height="720" tabindex="0" aria-label="Roadside Haven game. Click to control the character."></canvas>
+    <div id="touch-controls" data-mode="walk" hidden>
+      <div class="touch-topbar"><button type="button" data-action="map" id="touch-map">Map</button><button type="button" data-action="menu">Menu</button><button type="button" data-action="back" id="touch-back" hidden>Back</button><span id="touch-mode" aria-live="polite">On foot</span></div>
+      <div id="touch-look" aria-label="Swipe to look around"><span>Swipe to look</span></div>
+      <div id="touch-stick" role="application" aria-label="Movement and steering joystick"><div id="touch-stick-knob"></div></div>
+      <div class="touch-actions">
+        <button type="button" data-action="vehicle" id="touch-vehicle">Enter car</button>
+        <button type="button" data-action="use" class="walk-action">Use</button>
+        <button type="button" data-action="talk" class="walk-action">Talk</button>
+        <button type="button" data-held="sprint" class="walk-action">Run</button>
+        <button type="button" data-action="jump" class="walk-action accent">Jump</button>
+        <button type="button" data-held="reverse" class="drive-action">Reverse</button>
+        <button type="button" data-action="reset" class="drive-action">Reset</button>
+        <button type="button" data-held="brake" class="drive-action">Brake</button>
+        <button type="button" data-held="gas" class="drive-action accent">Gas</button>
+      </div>
+      <p class="orientation-tip">Turn your phone sideways for a wider view</p>
+    </div>
     <section id="welcome" aria-labelledby="welcome-title">
       <div class="welcome-content">
         <p class="eyebrow">WELCOME TO YOUR NEXT CHAPTER</p>
@@ -48,6 +65,7 @@
       }
     };
   </script>
+  <script src="touch-controls.js" defer></script>
   <script src="demo.js" defer></script>
 </body>
 </html>
