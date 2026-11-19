@@ -17,7 +17,7 @@ namespace RoadsideHaven.Tests
             foreach(float z in new[]{-.5f,-25.5f})for(float x=258;x<339;x+=1)foreach(var c in Physics.OverlapCapsule(new Vector3(x,.52f,z),new Vector3(x,1.65f,z),.25f))Assert.IsFalse(StaticObstacle(c),"Public sidewalk blocked: "+c.name);
             foreach(var lane in new[]{new Vector3(270,0,9),new Vector3(330,0,9),new Vector3(330,-37,-24.1f)})for(float z=lane.y;z<=lane.z;z+=1)foreach(var c in Physics.OverlapBox(new Vector3(lane.x,.95f,z),new Vector3(.95f,.65f,1.7f)))Assert.IsFalse(StaticObstacle(c),"Driveway blocked: "+c.name);
             var driving=motel.GetComponentInChildren<WorldDrivingController>(true);var cars=area.GetComponentsInChildren<EnterableVehicle>();Assert.AreEqual(2,cars.Length);
-            foreach(var car in cars){var body=car.GetComponent<Rigidbody>();Assert.IsTrue(driving.IsRegistered(body));Assert.IsNotNull(car.GetComponent<ModernCarVisuals>());car.TakeControl();Assert.IsFalse(body.isKinematic);Assert.IsNotNull(car.GetComponent<ArcadeVehicleMotor>());body.isKinematic=true;}
+            foreach(var car in cars){var body=car.GetComponent<Rigidbody>();Assert.IsTrue(driving.IsRegistered(body));Assert.IsTrue(car.GetComponent<ModernCarVisuals>()!=null||car.GetComponent<RealisticVehicleVisuals>()!=null,"Display car has no modern design");car.TakeControl();Assert.IsFalse(body.isKinematic);Assert.IsNotNull(car.GetComponent<ArcadeVehicleMotor>());body.isKinematic=true;}
             LogAssert.NoUnexpectedReceived();yield return new ExitPlayMode();
         }
     }

@@ -42,6 +42,57 @@ namespace RoadsideHaven.Tests
             Object.Destroy(wall);yield return null;until=Time.realtimeSinceStartup+1.5f;while(Time.realtimeSinceStartup<until)yield return null;
             Assert.Greater(body.position.z,stopped+.5f,"Traffic did not resume after the obstruction cleared");Object.Destroy(car);LogAssert.NoUnexpectedReceived();yield return new ExitPlayMode();
         }
+        [Test] public void PeopleHaveChildrenAndVariedModernLooks()
+        {
+            var tops=new System.Collections.Generic.HashSet<HumanTop>();var bottoms=new System.Collections.Generic.HashSet<HumanBottom>();var hair=new System.Collections.Generic.HashSet<int>();int caps=0,bags=0,phones=0,women=0;
+            for(int i=0;i<300;i++){var p=HumanIdentity.Create(i);tops.Add(p.Top);bottoms.Add(p.Bottom);hair.Add(p.HairStyle);if(p.Cap)caps++;if(p.Backpack||p.Handbag)bags++;if(p.Phone)phones++;if(p.Feminine)women++;}
+            Assert.GreaterOrEqual(tops.Count,5);Assert.GreaterOrEqual(bottoms.Count,5);Assert.GreaterOrEqual(hair.Count,7);Assert.Greater(caps,5);Assert.Greater(bags,30);Assert.Greater(phones,40);Assert.Greater(women,100);
+            for(int i=0;i<40;i++){var child=HumanIdentity.Create(i,HumanRole.Civilian,HumanAge.Child);Assert.IsTrue(child.IsChild);Assert.Less(child.Height,1.45f);Assert.Greater(child.HeadScale,1.15f);Assert.IsFalse(child.Beard||child.Stubble||child.Glasses);}
+            var root=new GameObject("Test child");try
+            {
+                var kid=HumanVisual.Create(root.transform,HumanIdentity.Create(7,HumanRole.Civilian,HumanAge.Child),false);var adult=HumanVisual.Create(root.transform,HumanIdentity.Create(7,HumanRole.Civilian,HumanAge.Adult),false);
+                float kidTop=kid.Renderer.sharedMesh.bounds.max.y*kid.transform.localScale.y,adultTop=adult.Renderer.sharedMesh.bounds.max.y*adult.transform.localScale.y;
+                Assert.Less(kidTop,adultTop-.1f,"Child is not smaller than an adult");
+            }finally{Object.DestroyImmediate(root);}
+        }
+        private static TownCitizenAgent Person(string name,Vector3 at,HumanAge? age=null)
+        {
+            var go=new GameObject(name);var agent=go.AddComponent<TownCitizenAgent>();if(age.HasValue)agent.InitializeAs(age.Value);else agent.Initialize(null,null,false);agent.Warp(at);return agent;
+        }
+        private static string SociableName(string prefix){for(int i=0;;i++){var n=prefix+i;if(HumanIdentity.Create(HumanIdentity.StableSeed(n)).Sociability>.7f)return n;}}
+        private static IEnumerator Seconds(float s){float u=Time.time+s;while(Time.time<u)yield return null;}
+        [UnityTest] public IEnumerator CitizensSolveBlockagesDodgeCarsChatAndWalkAsFamilies()
+        {
+            yield return new EnterPlayMode();Application.runInBackground=true;
+            var o=new Vector3(15000,0,15000);var ground=GameObject.CreatePrimitive(PrimitiveType.Plane);ground.transform.position=o;ground.transform.localScale=Vector3.one*12;
+            // A wall right across the path: the walker must find its own way round and still arrive.
+            var wall=GameObject.CreatePrimitive(PrimitiveType.Cube);wall.transform.position=o+new Vector3(0,1,6);wall.transform.localScale=new Vector3(9,2,.4f);
+            var walker=Person("Problem solver",o);walker.Walk(new[]{o+new Vector3(0,0,14)});
+            // A parent and child.
+            var parent=Person("Family parent",o+new Vector3(20,0,0),HumanAge.Adult);var child=Person("Family child",o+new Vector3(20,0,0),HumanAge.Child);child.Follow(parent);parent.Walk(new[]{o+new Vector3(20,0,10)});
+            // Two sociable neighbours standing together.
+            var a=Person(SociableName("Chatty A"),o+new Vector3(-20,0,0));var b=Person(SociableName("Chatty B"),o+new Vector3(-20,0,1.6f));
+            // A pedestrian in the path of a speeding car.
+            var target=Person("Alert pedestrian",o+new Vector3(-40,0,0));
+            Physics.SyncTransforms();yield return Seconds(1);
+            var car=GameObject.CreatePrimitive(PrimitiveType.Cube);car.name="Speeding car";car.transform.position=o+new Vector3(-40,.8f,-22);car.transform.localScale=new Vector3(2,1.4f,4.4f);
+            var body=car.AddComponent<Rigidbody>();body.useGravity=false;body.constraints=RigidbodyConstraints.FreezeRotation|RigidbodyConstraints.FreezePositionY;body.linearVelocity=Vector3.forward*12;
+            float startX=target.transform.position.x;
+            yield return Seconds(1.8f);
+            Assert.Greater(target.DangersAvoided,0,"Pedestrian ignored the approaching car");
+            Assert.Greater(Mathf.Abs(target.transform.position.x-startX),.8f,"Pedestrian did not step out of the way");
+            Object.Destroy(car);
+            Assert.IsNotNull(a.Partner,"Sociable neighbours did not start a conversation");Assert.AreEqual(CitizenMood.Chatting,a.Mood);Assert.AreEqual(b,a.Partner);
+            yield return Seconds(19);
+            Assert.Greater(walker.ProblemsSolved,0,"Walker never tried to solve the blockage");
+            Assert.Less(Vector3.Distance(walker.transform.position,o+new Vector3(0,0,14)),1.2f,"Walker did not get round the wall");
+            Assert.Less(Vector3.Distance(parent.transform.position,o+new Vector3(20,0,10)),1.2f,"Parent did not arrive");
+            Assert.Less(Vector3.Distance(child.transform.position,parent.transform.position),1.6f,"Child did not stay with the parent");
+            Assert.AreEqual(CitizenMood.Following,child.Mood);Assert.IsTrue(child.Human.Identity.IsChild);
+            LogAssert.NoUnexpectedReceived();
+            foreach(var go in new[]{ground,wall,walker.gameObject,parent.gameObject,child.gameObject,a.gameObject,b.gameObject,target.gameObject})Object.Destroy(go);
+            yield return new ExitPlayMode();
+        }
         [Test] public void HumanMeshHasOneRendererSkinBonesFacesClothesAndNoDecorativeColliders()
         {
             var root=new GameObject("Test human");try

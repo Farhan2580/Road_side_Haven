@@ -41,6 +41,7 @@ namespace RoadsideHaven
             (motel.GetComponentInChildren<ShopHUD>(true)?.IsOpen ?? false);
         public void Configure(MotelGameRoot root,OwnerSandboxController player,WorldDrivingController vehicles,IsometricCameraController mapController)
         {motel=root;owner=player;driving=vehicles;map=mapController;lens=GetComponent<Camera>();}
+        public void ResetWalkingView(){yaw=0;pitch=12;distance=4.5f;lastTarget=null;}
         private void Awake(){originalLock=Cursor.lockState;originalVisible=Cursor.visible;originalNearClip=GetComponent<Camera>().nearClipPlane;}
         private void Update()
         {

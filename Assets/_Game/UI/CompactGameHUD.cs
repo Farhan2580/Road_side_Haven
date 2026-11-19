@@ -9,8 +9,11 @@ namespace RoadsideHaven
     {
         private GameObject menu,help;
         private TMP_Text clock,toast;
-        private string lastOwner,lastDriver,lastLife,lastUniverse,lastBusiness;
+        private string lastOwner,lastDriver,lastLife,lastUniverse,lastBusiness,lastNeighborhood,lastHospital,lastHospitalTravel;
+        private HospitalCampusLife hospital;
+        private HospitalTravel hospitalTravel;
         private BusinessEmpireController business;
+        private HeritageNeighborhoodLife neighborhood;
         private float toastUntil;
         private OwnerSandboxController owner;
         private WorldDrivingController driving;
@@ -21,6 +24,9 @@ namespace RoadsideHaven
         public bool MenuOpen => menu!=null&&menu.activeSelf || help!=null&&help.activeSelf;
         private void Start()
         {
+            neighborhood=GetComponentInChildren<HeritageNeighborhoodLife>(true);
+            hospital=GetComponentInChildren<HospitalCampusLife>(true);
+            hospitalTravel=HospitalTravel.Install(GetComponent<MotelGameRoot>());
             owner=GetComponentInChildren<OwnerSandboxController>(true);
             driving=GetComponentInChildren<WorldDrivingController>(true);
             life=GetComponentInChildren<OwnerLifeController>(true);
@@ -36,10 +42,10 @@ namespace RoadsideHaven
             var label=Rect(safe,"Time",new Vector2(0,1),new Vector2(20,-66),new Vector2(600,26));label.pivot=new Vector2(0,1);
             clock=Label(label,"",17);clock.alignment=TextAlignmentOptions.Left;
             Button(safe,"MENU",new Vector2(-90,-75),new Vector2(130,36),()=>{bool open=!MenuOpen;Close();menu.SetActive(open);});
-            var panel=Rect(safe,"Actions",new Vector2(1,1),new Vector2(-20,-100),new Vector2(250,405));panel.pivot=new Vector2(1,1);Background(panel);
+            var panel=Rect(safe,"Actions",new Vector2(1,1),new Vector2(-20,-100),new Vector2(250,483));panel.pivot=new Vector2(1,1);Background(panel);
             menu=panel.gameObject;
-            string[] names={"Walk / Map (M / P)","Enter / Exit vehicle (E)","Interact nearby (G)","Garage & quests (J)","Talk to NPC (L)","Dimension portal (T)","Reset vehicle (R)","Business empire (B)","AIRPORT (walk / F10)","Controls"};
-            UnityEngine.Events.UnityAction[] actions={()=>owner?.ToggleWalking(),()=>owner?.VehicleInteraction(),()=>owner?.UseNearby(),()=>life?.TogglePanel(),()=>life?.OpenDialogue(),()=>multiverse?.TogglePortal(),()=>driving?.ResetActiveVehicle(),()=>business?.TogglePanel(),()=>GetComponentInChildren<AirportOperations>(true)?.VisitAirport(),()=>help.SetActive(true)};
+            string[] names={"Walk / Map (M / P)","Enter / Exit vehicle (E)","Interact nearby (G)","Garage & quests (J)","Talk to NPC (L)","Dimension portal (T)","Reset vehicle (R)","Business empire (B)","AIRPORT (walk / F10)","OLD TOWN / GARDENS","HOSPITAL (F11)","Controls"};
+            UnityEngine.Events.UnityAction[] actions={()=>owner?.ToggleWalking(),()=>owner?.VehicleInteraction(),()=>owner?.UseNearby(),()=>life?.TogglePanel(),()=>life?.OpenDialogue(),()=>multiverse?.TogglePortal(),()=>driving?.ResetActiveVehicle(),()=>business?.TogglePanel(),()=>GetComponentInChildren<AirportOperations>(true)?.VisitAirport(),()=>neighborhood?.VisitNext(),()=>HospitalTravel.Visit(GetComponent<MotelGameRoot>()),()=>help.SetActive(true)};
             for(int i=0;i<names.Length;i++)
             {
                 int index=i;var button=Rect(panel,names[i],new Vector2(.5f,1),new Vector2(0,-23-i*39),new Vector2(230,32));
@@ -68,6 +74,11 @@ namespace RoadsideHaven
             Watch(ref lastUniverse,multiverse==null?null:multiverse.Status);
             if(toast!=null)toast.gameObject.SetActive(Time.unscaledTime<toastUntil);
             Watch(ref lastBusiness,business==null?null:business.Status);
+            Watch(ref lastNeighborhood,neighborhood?.Status);
+            Watch(ref lastHospital,hospital?.Status);
+            if(hospital==null)hospital=GetComponentInChildren<HospitalCampusLife>(true);
+            if(hospitalTravel==null)hospitalTravel=GetComponent<HospitalTravel>();
+            Watch(ref lastHospitalTravel,hospitalTravel?.Status);
             bool modal=(life!=null&&life.PanelOpen)||(multiverse!=null&&multiverse.IsPortalPanelOpen)||(business!=null&&business.PanelOpen);
             if(modal&&MenuOpen)Close();
             if(cameraController!=null)cameraController.SetOverlayInputBlocked(MenuOpen||modal);

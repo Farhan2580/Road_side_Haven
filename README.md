@@ -66,8 +66,11 @@ No Unity installation is needed to play. The first launch downloads the game, so
 | 🌅 **A changing atmosphere** | See seasonal visuals and street, building and garden lighting, with an 80% day / 20% night cycle. |
 | 🏦 **Beyond one business** | Purchase and upgrade businesses, collect income and unlock more of the business portfolio. |
 | 🔮 **Four dimensions** | Visit Normal, Neon, Apocalypse and Fantasy overlays with separate wallets and cross-universe item trading. |
+| 🏟️ **Farhan Stadium** | A two-tier modern stadium with LED façade and billboards. Matches are played on odd days at 17:00 (buy a ticket at a kiosk with G, watch live on Farhan TV with B). |
+| 🚑 **Haven Grand Medical Centre** | An AI ambulance answers incidents in town while traffic pulls over. Drive Ambulance 2 for paid rescue missions (H: siren). Doctors, nurses, patients and visitors keep the hospital busy. |
+| ✈️ **Haven International Airport** | A two-level terminal under a wave roof, with an elevated departures road and an arrivals pick-up lane. Contact gates with jet bridges, airliners in four liveries, landings and take-offs, and a city sightseeing helicopter. |
 
-The dimensions currently share the same physical map. Town activity is a finite simulation; this demo does not include complete building interiors, medical treatment, arrests or full combat. Save/load and player-controlled helicopter flight are not implemented.
+The dimensions currently share the same physical map. Town activity is a finite simulation; this demo does not include complete interiors for every building, arrests or full combat. Save/load and player-controlled helicopter flight are not implemented.
 
 ## Take control
 
@@ -159,6 +162,12 @@ Desktop **Sharp** uses full render scale, up to 2× display pixel density and 2�
 
 <details>
 <summary><strong>Publish updates to the live demo</strong></summary>
+
+**Committed build → GitHub Pages (simplest)**
+
+1. Build and test the browser export (**Roadside Haven → Web Demo → Build Browser Demo**).
+2. Replace the contents of [`site/`](site) with the contents of `Builds/WebGL`.
+3. Commit and push to `main`. The **Deploy committed browser build** workflow validates `site/` and publishes it to the live URL.
 
 **Tested local build → GitHub Release → GitHub Pages**
 

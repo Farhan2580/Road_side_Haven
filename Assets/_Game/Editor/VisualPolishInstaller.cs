@@ -64,7 +64,7 @@ namespace RoadsideHaven.Editor
             gold = Material("Amber", new Color(1f, .63f, .22f), true);
             red = Material("Coral", new Color(.82f, .29f, .20f));
             glass = Material("Window", new Color(.28f, .51f, .61f));
-            asphalt = Material("Asphalt", new Color(.20f, .25f, .27f));
+            asphalt = Material("Asphalt", new Color(.25f, .255f, .26f));
             InstallAtmosphere(motel);
             if (motel.transform.Find(LayerName) != null)
             {

@@ -1,0 +1,12 @@
+{
+    "loaderUrl": "Build/d09d22da0dc644261934a4034302e570.loader.js",
+    "config": {
+        "dataUrl": "Build/6c13f36845b51f470ba29a621c345048.data.unityweb",
+        "frameworkUrl": "Build/e33c0580680beffce40243124ad8d10a.framework.js.unityweb",
+        "codeUrl": "Build/77711473a6124d6cfafb90c9a129b389.wasm.unityweb",
+        "streamingAssetsUrl": "StreamingAssets",
+        "companyName": "Roadside Haven",
+        "productName": "Roadside Haven",
+        "productVersion": "0.1.0"
+    }
+}

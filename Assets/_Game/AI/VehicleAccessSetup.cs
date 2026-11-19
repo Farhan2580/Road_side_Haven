@@ -36,7 +36,7 @@ namespace RoadsideHaven
                 if(access==null){access=body.gameObject.AddComponent<EnterableVehicle>();access.Configure(traffic?-1:1);}
                 driving.RegisterVehicle(body);
                 if(body.GetComponent<ModernCarVisuals>()==null && !body.name.Contains("CNG") && body.GetComponentsInChildren<MeshRenderer>(true).Any(r=>r.name=="Car body"))
-                    body.gameObject.AddComponent<ModernCarVisuals>().Configure(carStyle++);
+                    RealisticVehicleVisuals.ForTraffic(body.gameObject,carStyle++);
             }
             Physics.SyncTransforms();
         }

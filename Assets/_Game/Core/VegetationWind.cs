@@ -14,8 +14,10 @@ namespace RoadsideHaven
             if(plants==null)return;
             if(Time.time>=nextSeason){nextSeason=Time.time+1;if(atmosphere==null)atmosphere=GetComponentInParent<MotelAtmosphere>();if(atmosphere!=null&&season!=atmosphere.Season)ApplySeason();}
             if(Time.time<nextWind)return;nextWind=Time.time+.1f;var camera=Camera.main;if(camera==null)return;
+            // Storm wind from the weather system makes canopies swing harder and faster.
+            float gale=WeatherSystem.Active==null?1:Mathf.Lerp(.8f,4.2f,Mathf.InverseLerp(.3f,1.15f,WeatherSystem.Active.Wind));float pace=Mathf.Lerp(1,2.1f,(gale-.8f)/3.4f);
             for(int i=0;i<plants.Length;i++)
-            {var plant=plants[i];if(plant==null||plant.Canopy==null)continue;if((plant.transform.position-camera.transform.position).sqrMagnitude>190*190)continue;float wind=Mathf.Sin(Time.time*.72f+i*1.73f)*Mathf.Sin(Time.time*.23f+i*.51f);plant.Canopy.localRotation=Quaternion.Euler(wind*.6f,0,wind*(plant.Kind==VegetationKind.Bamboo?1.8f:.9f));}
+            {var plant=plants[i];if(plant==null||plant.Canopy==null)continue;if((plant.transform.position-camera.transform.position).sqrMagnitude>190*190)continue;float wind=Mathf.Sin(Time.time*.72f*pace+i*1.73f)*Mathf.Sin(Time.time*.23f*pace+i*.51f);plant.Canopy.localRotation=Quaternion.Euler(wind*.6f*gale,0,wind*(plant.Kind==VegetationKind.Bamboo?1.8f:.9f)*gale);}
         }
         private void ApplySeason()
         {

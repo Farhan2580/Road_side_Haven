@@ -33,7 +33,7 @@ namespace RoadsideHaven
         private Color previousAmbient, previousSunColor, previousFogColor;
         private AmbientMode previousMode;
         private FogMode previousFogMode;
-        private float previousSunIntensity, previousFogStart, previousFogEnd;
+        private float previousSunIntensity, previousFogStart, previousFogEnd, previousFogDensity, previousShadowStrength = 1f;
         private bool previousFog;
         private Quaternion previousSunRotation;
         private float hour;
@@ -47,6 +47,8 @@ namespace RoadsideHaven
         private CameraClearFlags previousClearFlags;
         private readonly Dictionary<Light, float> fillLights = new Dictionary<Light, float>();
         public float Hour => hour;
+        /// <summary>0 at night, 1 in full daylight.</summary>
+        public float Daylight { get; private set; } = 1f;
         public int Day => elapsedDays + 1;
         public WorldSeason Season => (WorldSeason)(((int)startingSeason + elapsedDays / Mathf.Max(1, daysPerSeason)) % 6);
 
@@ -77,6 +79,7 @@ namespace RoadsideHaven
             previousSunColor = sun.color;
             previousSunIntensity = sun.intensity;
             previousSunRotation = sun.transform.rotation;
+            previousShadowStrength = sun.shadowStrength;
         }
 
         private void OnEnable()
@@ -90,6 +93,7 @@ namespace RoadsideHaven
             previousFogColor = RenderSettings.fogColor;
             previousFogStart = RenderSettings.fogStartDistance;
             previousFogEnd = RenderSettings.fogEndDistance;
+            previousFogDensity = RenderSettings.fogDensity;
             if (sun != null) CaptureSun();
             captured = true;
             hour = startingHour;
@@ -161,16 +165,30 @@ namespace RoadsideHaven
                 : Mathf.PI + Mathf.Repeat(hour - sunrise - daylightHours, 24f) / (24f - daylightHours) * Mathf.PI;
             float elevation = Mathf.Sin(solarPhase);
             float day = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(-.12f, .28f, elevation));
-            float cloud = Season == WorldSeason.Monsoon ? .65f : Season == WorldSeason.Winter ? .28f : .10f;
+            Daylight = day;
+            var weather = WeatherSystem.Active;
+            float cloud = weather != null ? weather.Cloud : Season == WorldSeason.Monsoon ? .65f : Season == WorldSeason.Winter ? .28f : .10f;
+            float rain = weather != null ? weather.Rain : 0f;
+            float flash = weather != null ? weather.Lightning : 0f;
             Vector3 sunDirection = new Vector3(Mathf.Cos(solarPhase), elevation, .22f).normalized;
-            RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = Color.Lerp(nightAmbient, new Color(.62f, .68f, .73f), day);
+            // Sky / horizon / ground ambient gives objects a lit top and a darker underside instead of flat fill.
+            Color skyAmbient = Color.Lerp(new Color(.10f, .14f, .25f), new Color(.56f, .67f, .82f), day);
+            Color horizonAmbient = Color.Lerp(nightAmbient, new Color(.55f, .58f, .58f), day);
+            Color groundAmbient = Color.Lerp(new Color(.04f, .05f, .07f), new Color(.25f, .25f, .20f), day);
+            Color overcast = Color.Lerp(new Color(.08f, .09f, .12f), new Color(.50f, .53f, .57f), day);
+            float grey = Mathf.Clamp01(cloud * .55f + rain * .45f);
+            RenderSettings.ambientMode = AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = Color.Lerp(skyAmbient, overcast, grey) + new Color(.5f, .55f, .7f) * flash;
+            RenderSettings.ambientEquatorColor = Color.Lerp(horizonAmbient, overcast * .9f, grey) + new Color(.3f, .33f, .4f) * flash;
+            RenderSettings.ambientGroundColor = Color.Lerp(groundAmbient, overcast * .45f, grey);
+            RenderSettings.ambientLight = RenderSettings.ambientEquatorColor;
             foreach (var fill in fillLights)
-                if (fill.Key != null) fill.Key.intensity = fill.Value * Mathf.Lerp(.12f, 1f, day);
+                if (fill.Key != null) fill.Key.intensity = fill.Value * Mathf.Lerp(.12f, 1f, day) * (1f - rain * .4f);
             if (sun != null)
             {
                 RenderSettings.sun = sun;
-                sun.intensity = elevation >= 0 ? daylightIntensity * Mathf.Clamp01(elevation) * (1f - cloud * .45f) : moonlightIntensity;
+                sun.intensity = elevation >= 0 ? daylightIntensity * Mathf.Clamp01(elevation) * (1f - cloud * .62f) * (1f - rain * .3f) : moonlightIntensity * (1f - cloud * .7f);
+                sun.shadowStrength = Mathf.Lerp(.92f, .35f, Mathf.Max(cloud - .3f, 0f) / .7f);
                 sun.color = elevation < 0 ? new Color(.55f, .68f, 1f) : Color.Lerp(twilight, daylight, day);
                 sun.transform.rotation = Quaternion.LookRotation(elevation >= 0 ? -sunDirection : sunDirection);
             }
@@ -185,13 +203,25 @@ namespace RoadsideHaven
             if (seasonalFog)
             {
                 RenderSettings.fog = true;
-                RenderSettings.fogMode = FogMode.Linear;
-                float cameraOffset = worldCamera != null && worldCamera.orthographic
-                    ? Mathf.Max(0, worldCamera.transform.position.y / Mathf.Max(.05f, -worldCamera.transform.forward.y)) : 0;
-                float overview = worldCamera != null && worldCamera.orthographic ? worldCamera.orthographicSize : 0;
-                RenderSettings.fogStartDistance = Mathf.Max(0, cameraOffset - overview) + clearVisibility * .55f;
-                RenderSettings.fogEndDistance = cameraOffset + overview * 2f + clearVisibility * (Season == WorldSeason.Winter ? .75f : 1.4f);
-                RenderSettings.fogColor = Color.Lerp(new Color(.06f, .09f, .17f), new Color(.59f, .68f, .74f), day);
+                bool overviewCamera = worldCamera != null && worldCamera.orthographic;
+                Color clearFog = Color.Lerp(new Color(.06f, .09f, .17f), new Color(.62f, .70f, .78f), day);
+                Color rainFog = Color.Lerp(new Color(.05f, .06f, .08f), new Color(.46f, .49f, .53f), day);
+                RenderSettings.fogColor = Color.Lerp(clearFog, rainFog, Mathf.Clamp01(cloud * .4f + rain * .8f));
+                if (overviewCamera)
+                {
+                    RenderSettings.fogMode = FogMode.Linear;
+                    float cameraOffset = Mathf.Max(0, worldCamera.transform.position.y / Mathf.Max(.05f, -worldCamera.transform.forward.y));
+                    float overview = worldCamera.orthographicSize;
+                    RenderSettings.fogStartDistance = Mathf.Max(0, cameraOffset - overview) + clearVisibility * .55f;
+                    RenderSettings.fogEndDistance = cameraOffset + overview * 2f + clearVisibility * (Season == WorldSeason.Winter ? .75f : 1.4f);
+                }
+                else
+                {
+                    // Aerial perspective for the third-person view: distance haze that thickens in rain.
+                    RenderSettings.fogMode = FogMode.ExponentialSquared;
+                    float density = 1.15f / clearVisibility * (Season == WorldSeason.Winter ? 1.35f : 1f);
+                    RenderSettings.fogDensity = density * (1f + cloud * .5f + rain * 2.6f);
+                }
             }
             if (appliedSeason != Season) ApplySeason();
         }
@@ -228,6 +258,7 @@ namespace RoadsideHaven
             RenderSettings.fogColor = previousFogColor;
             RenderSettings.fogStartDistance = previousFogStart;
             RenderSettings.fogEndDistance = previousFogEnd;
+            RenderSettings.fogDensity = previousFogDensity;
             if (worldCamera != null) worldCamera.clearFlags = previousClearFlags;
             foreach (var fill in fillLights) if (fill.Key != null) fill.Key.intensity = fill.Value;
             for (int i = 0; i < vegetation.Count; i++)
@@ -237,6 +268,7 @@ namespace RoadsideHaven
                 sun.color = previousSunColor;
                 sun.intensity = previousSunIntensity;
                 sun.transform.rotation = previousSunRotation;
+                sun.shadowStrength = previousShadowStrength;
             }
             if (runtimeSky != null) Destroy(runtimeSky);
         }

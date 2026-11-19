@@ -60,6 +60,15 @@ namespace RoadsideHaven
             var coachRoute=network.Route(new Vector3(-240,0,-13),new Vector3(180,0,650),false,6);
             if(coachRoute.Length>1&&Clear(coachRoute[0],Quaternion.LookRotation(coachRoute[1]-coachRoute[0]),new Vector3(2.85f,3.5f,11)))
             {var coach=Vehicle("Silver intercity coach",coachRoute[0],Quaternion.LookRotation(coachRoute[1]-coachRoute[0]),new Vector3(2.85f,3.5f,11));coach.gameObject.AddComponent<BusVisuals>().Configure(false);var agent=coach.gameObject.AddComponent<TownVehicleAgent>();agent.SetRoute(coachRoute,10);traffic.Add(agent);driving.RegisterVehicle(coach);}
+            // City buses on cross-town routes.
+            var busLines=new[]{(new Vector3(-240,0,-13),new Vector3(400,0,-13)),(new Vector3(-45,0,-150),new Vector3(180,0,600)),(new Vector3(-350,0,-300),new Vector3(420,0,200))};
+            for(int line=0;line<busLines.Length;line++)
+            {
+                var busRoute=network.Route(busLines[line].Item1,busLines[line].Item2,false,6);var busSize=RealisticVehicleVisuals.ColliderSize(VehicleBodyType.CityBus);
+                if(busRoute.Length<2||!Clear(busRoute[0],Quaternion.LookRotation(busRoute[1]-busRoute[0]),busSize))continue;
+                var bus=Vehicle("City bus "+(line+1),busRoute[0],Quaternion.LookRotation(busRoute[1]-busRoute[0]),busSize);bus.gameObject.AddComponent<RealisticVehicleVisuals>().Configure(VehicleBodyType.CityBus,line*3+1);
+                var busAgent=bus.gameObject.AddComponent<TownVehicleAgent>();busAgent.SetRoute(busRoute,8);traffic.Add(busAgent);driving.RegisterVehicle(bus);
+            }
             bool phone=MobileTouchInput.Enabled||Application.isMobilePlatform||SystemInfo.deviceType==DeviceType.Handheld;
             int vehicleBudget=phone?TownMotion.CarBudget(true):Mathf.Max(carCount,TownMotion.CarBudget(false));
             for(int i=0;i<vehicleBudget;i++)
@@ -76,7 +85,7 @@ namespace RoadsideHaven
                 }
                 if(route==null)continue;
                 var body=Vehicle("City commuter car "+i,route[0],Quaternion.LookRotation(route[1]-route[0]),new Vector3(2.18f,1.44f,4.5f));
-                body.gameObject.AddComponent<ModernCarVisuals>().Configure(i);
+                RealisticVehicleVisuals.ForTraffic(body.gameObject,i);
                 var agent=body.gameObject.AddComponent<TownVehicleAgent>();agent.SetRoute(route,7+i%4);traffic.Add(agent);driving.RegisterVehicle(body);
                 yield return null;
             }
@@ -94,6 +103,9 @@ namespace RoadsideHaven
                 var work=options.Count>0?options[i%options.Count]+Vector3.right*(i%3)*.8f:Sidewalk(road,.8f);
                 if(!TryCitizenSpawn(home,out home)){Destroy(obj);continue;}
                 agent.Warp(home);citizens.Add(new Citizen{Agent=agent,Home=home,Work=work,Shopper=shopper,Patrol=police,Wait=Random.Range(1f,14f)});
+                // Families: a child walks hand in hand with some of the parents.
+                if(!doctor&&!police&&!jogger&&i%(phone?14:6)==2&&agent.Human.Identity.Age!=HumanAge.Teen)
+                {var kid=new GameObject("Child "+i);kid.transform.SetParent(transform,false);var child=kid.AddComponent<TownCitizenAgent>();child.InitializeAs(HumanAge.Child);kid.AddComponent<WorldNpc>().Configure("town-child-"+i,"Child");child.Follow(agent);}
                 if(i%4==0)yield return null;
             }
             ready=true;

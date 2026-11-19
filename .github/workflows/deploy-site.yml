@@ -1,0 +1,64 @@
+name: Deploy committed browser build
+
+# Publishes the tested WebGL export committed in `site/` to GitHub Pages.
+# Build locally (Roadside Haven → Web Demo → Build Browser Demo), copy the contents of
+# Builds/WebGL into site/, commit and push: the live demo updates automatically.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - '.github/workflows/deploy-site.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-browser-demo
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Validate the committed browser build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts
+            site
+            Assets/WebGLTemplates
+          persist-credentials: false
+
+      - name: Test deployment checks
+        run: node --test scripts/*.test.mjs
+
+      - name: Validate the exported game
+        run: node scripts/validate-web-build.mjs site
+
+      - name: Upload the game for GitHub Pages
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  deploy:
+    name: Publish the playable game
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+      - name: Publish browser demo
+        id: deployment
+        uses: actions/deploy-pages@v4

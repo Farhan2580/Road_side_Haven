@@ -53,13 +53,17 @@ namespace RoadsideHaven
             float input=Mathf.Clamp(throttle,-1,1);
             if(!brake && Mathf.Abs(input)>.01f)TryClimbStep(bounds,forward*Mathf.Sign(input));
             velocity=body.linearVelocity;
+            // Handbrake turn: braking while steering at speed lets the rear step out into a drift.
+            bool drift=brake&&Mathf.Abs(turn)>.25f&&Mathf.Abs(speed)>9f;
             float target=brake?0:input*(input>=0?topSpeed:reverseSpeed);
-            float change=brake?Mathf.Max(brakeStrength,1)*Mathf.Max(1,Mathf.Abs(speed)):Mathf.Abs(input)>.01f?acceleration:2f;
+            float change=drift?Mathf.Max(brakeStrength,1)*.22f:brake?Mathf.Max(brakeStrength,1)*Mathf.Max(1,Mathf.Abs(speed)):Mathf.Abs(input)>.01f?acceleration:2f;
             float next=Mathf.MoveTowards(speed,target,change*dt);
-            float lateral=Vector3.Dot(velocity,right)*Mathf.Exp(-Mathf.Max(0,grip)*dt);
+            float lateral=Vector3.Dot(velocity,right)*Mathf.Exp(-Mathf.Max(0,drift?1.1f:grip)*dt);
             body.linearVelocity=forward*next+right*lateral+Vector3.up*velocity.y;
             if(Mathf.Abs(input)>.01f)body.WakeUp();
-            float rotation=Mathf.Clamp(turn,-1,1)*steering*Mathf.Clamp(next/3f,-1,1)*dt;
+            // Steering calms down at speed (stable on the highway, nimble in town); drifting swings the tail.
+            float steerScale=Mathf.Lerp(1f,.58f,Mathf.InverseLerp(15f,45f,Mathf.Abs(next)))*(drift?1.6f:1f);
+            float rotation=Mathf.Clamp(turn,-1,1)*steering*steerScale*Mathf.Clamp(next/3f,-1,1)*dt;
             body.MoveRotation(body.rotation*Quaternion.Euler(0,rotation,0));
         }
         private void TryClimbStep(Bounds bounds,Vector3 direction)
@@ -67,10 +71,11 @@ namespace RoadsideHaven
             Vector3 right=Vector3.Cross(Vector3.up,direction);
             float front=Mathf.Abs(direction.x)*bounds.extents.x+Mathf.Abs(direction.z)*bounds.extents.z;
             float width=Mathf.Abs(right.x)*bounds.extents.x+Mathf.Abs(right.z)*bounds.extents.z;
-            float rise=0;
+            float rise=0;float travel=Mathf.Abs(Vector3.Dot(body.linearVelocity,direction))*Time.fixedDeltaTime;
             for(int probe=-1;probe<=1;probe++)
             {
-                Vector3 origin=bounds.center+direction*(front+Mathf.Max(.18f,Mathf.Abs(Vector3.Dot(body.linearVelocity,direction))*Time.fixedDeltaTime+.12f))+right*(probe*width*.65f);
+                // Look far enough ahead that the ramp-style lift below finishes before the bumper meets the edge.
+                Vector3 origin=bounds.center+direction*(front+Mathf.Max(.4f,travel*2+.15f))+right*(probe*width*.65f);
                 origin.y=bounds.min.y+maxStepHeight+.12f;
                 int count=physicsScene.Raycast(origin,Vector3.down,hits,maxStepHeight+.25f,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
                 float closest=float.MaxValue;float height=0;
@@ -84,7 +89,8 @@ namespace RoadsideHaven
                 if(height>.005f)rise=Mathf.Max(rise,height);
             }
             if(rise<=0)return;
-            float lift=rise+.075f;
+            // Ride up like a short ramp over several physics steps; a one-step teleport reads as a hop at junction seams and curbs.
+            float lift=Mathf.Min(rise+.005f,Mathf.Max(.03f,travel*.6f));
             int overlaps=physicsScene.OverlapBox(bounds.center+Vector3.up*lift,Vector3.Max(bounds.extents-Vector3.one*.025f,Vector3.one*.02f),clearance,Quaternion.identity,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
             // A saturated query or obstructed headroom rejects the step rather than bypassing collision.
             if(overlaps==clearance.Length)return;

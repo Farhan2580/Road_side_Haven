@@ -108,7 +108,7 @@ namespace RoadsideHaven
             var vehicle = vehicles[active];
             var trafficDriver=vehicle.GetComponent<TownVehicleAgent>();if(trafficDriver!=null&&trafficDriver.enabled)trafficDriver.enabled=false;
             var access=vehicle.GetComponent<EnterableVehicle>();
-            float scale=(access==null?1:access.SpeedScale)*(life==null?1:life.VehicleMultiplier(active));
+            float scale=(access==null?1:access.SpeedScale)*(life==null?1:life.VehicleMultiplier(active))*VehicleDynamics.SpeedFactor(vehicle);
             var motor=vehicle.GetComponent<ArcadeVehicleMotor>();if(motor==null){motor=vehicle.gameObject.AddComponent<ArcadeVehicleMotor>();motor.Prepare();}
             motor.Drive(throttle,turn,brake,acceleration*scale,Mathf.Min(MaximumForwardSpeed,MaximumForwardSpeed*scale),reverseSpeed,steering,braking,lateralGrip,access==null?1:access.ForwardSign,Time.fixedDeltaTime);
             var horizontalVelocity=Vector3.ProjectOnPlane(vehicle.linearVelocity,Vector3.up);
@@ -190,6 +190,7 @@ namespace RoadsideHaven
             if(active==2 && owner!=null && owner.HasSupplyCargo){status="Unload cargo before resetting the supply truck.";return;}
             vehicles[active].position=startPositions[active];vehicles[active].rotation=startRotations[active];
             vehicles[active].linearVelocity=Vector3.zero;vehicles[active].angularVelocity=Vector3.zero;
+            VehicleDynamics.Repair(vehicles[active]);
         }
         private void OnDisable()
         {
@@ -246,6 +247,20 @@ namespace RoadsideHaven
             return false;
         }
 
+        /// <summary>Fast travel ends driving without depending on a clear roadside exit or current speed.</summary>
+        public void TravelOnFoot(Vector3 destination)
+        {
+            if(owner==null)owner=GetComponentInParent<MotelGameRoot>()?.GetComponentInChildren<OwnerSandboxController>(true);
+            if(owner==null)return;
+            if(IsDriving&&ActiveVehicleTransform!=null){
+                var vehicle=vehicles[active];if(!vehicle.isKinematic){vehicle.linearVelocity=Vector3.zero;vehicle.angularVelocity=Vector3.zero;}vehicle.isKinematic=true;
+                active=-1;vehicle.GetComponent<EnterableVehicle>()?.ReleaseControl();
+            }
+            throttle=turn=washProgress=0;brake=false;
+            var spray=transform.Find("Car Wash Spray");if(spray!=null)spray.gameObject.SetActive(false);
+            if(motelHud!=null)motelHud.gameObject.SetActive(motelHudWasVisible);
+            owner.ExitVehicle(destination);status="On foot at Haven Grand Medical Centre. E: enter a nearby vehicle.";
+        }
         public bool TryExitOwner()
         {
             if (!IsDriving || owner == null || vehicles[active] == null) return false;
