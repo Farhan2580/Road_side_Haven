@@ -75,8 +75,25 @@ namespace RoadsideHaven.Editor
             {
                 BuildVariant(destination, WebGLTextureSubtarget.DXT);
                 string phoneOutput = destination + "-Android";
-                BuildVariant(phoneOutput, WebGLTextureSubtarget.ETC2);
+                // Unity's incremental WebGL exporter can move the previous output's Build
+                // directory into the next export. Preserve desktop files across that step.
+                string snapshot = Path.GetFullPath(destination + "-DesktopRuntime-" + Guid.NewGuid().ToString("N"));
+                if (!snapshot.StartsWith(project, StringComparison.OrdinalIgnoreCase))
+                    throw new BuildFailedException("Runtime backup must stay inside the project.");
+                CopyFolder(Path.Combine(destination, "Build"), snapshot);
+                try { BuildVariant(phoneOutput, WebGLTextureSubtarget.ETC2); }
+                finally
+                {
+                    CopyFolder(snapshot, Path.Combine(destination, "Build"));
+                    if (!Path.GetFullPath(snapshot).StartsWith(project, StringComparison.OrdinalIgnoreCase))
+                        throw new BuildFailedException("Refusing to remove a runtime backup outside the project.");
+                    Directory.Delete(snapshot, true);
+                }
                 ExportPhoneManifest(destination, phoneOutput);
+                string html = File.ReadAllText(Path.Combine(destination, "index.html"));
+                var runtime = Regex.Matches(html, "(?:loaderUrl|dataUrl|frameworkUrl|codeUrl):\\s*\"(Build/[^\"]+)\"");
+                if (runtime.Count != 4 || runtime.Cast<Match>().Any(match => !File.Exists(Path.Combine(destination, match.Groups[1].Value))))
+                    throw new BuildFailedException("Desktop runtime is incomplete after exporting the phone build.");
             }
             File.WriteAllText(Path.Combine(destination, ".nojekyll"), string.Empty);
             FingerprintTemplateAssets(destination);
@@ -92,6 +109,16 @@ namespace RoadsideHaven.Editor
             });
             if (report.summary.result != BuildResult.Succeeded)
                 throw new BuildFailedException("Web demo " + textures + " build failed: " + report.summary.result + "; errors: " + report.summary.totalErrors);
+        }
+
+        private static void CopyFolder(string source, string destination)
+        {
+            foreach (string file in Directory.GetFiles(source, "*", SearchOption.AllDirectories))
+            {
+                string target = Path.Combine(destination, Path.GetRelativePath(source, file));
+                Directory.CreateDirectory(Path.GetDirectoryName(target));
+                File.Copy(file, target, true);
+            }
         }
 
         public static void FingerprintTemplateAssets(string destination)

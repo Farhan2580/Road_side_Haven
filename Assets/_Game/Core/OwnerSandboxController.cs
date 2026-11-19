@@ -30,11 +30,11 @@ namespace RoadsideHaven
         [SerializeField, Min(1)] private float prankCooldown = 120f;
         private CharacterController character;
         private Transform visual;
-        private Transform[] limbs;
+        private HumanVisual human;
         private float fallSpeed, gait, prankReadyAt, rivalClosedUntil;
         private bool walking, cargo;
         private string message = "P: walk as owner | E: enter/exit nearby vehicle | G: interact";
-        private Material skin, clothes;
+
         private PcThirdPersonCamera pcCamera;
         private ShopHUD shopView;
         private MultiverseController portalView;
@@ -62,36 +62,10 @@ namespace RoadsideHaven
             character.stepOffset=.22f;character.slopeLimit=45f;character.minMoveDistance=0;
             if(Vector2.Distance(new Vector2(transform.position.x,transform.position.z),new Vector2(-5,-6))<.5f)
             { character.enabled=false;transform.position=new Vector3(-1.8f,.2f,-5.8f);character.enabled=true; }
-            visual = new GameObject("Owner visual").transform;
-            visual.SetParent(transform, false);
-            var shader = Shader.Find("Universal Render Pipeline/Lit");
-            if (shader != null)
-            {
-                skin = new Material(shader) { color = new Color(.68f, .45f, .30f) };
-                clothes = new Material(shader) { color = new Color(.16f, .27f, .48f) };
-                Part(visual, "Torso", new Vector3(0, 1.05f, 0), new Vector3(.48f, .6f, .3f), clothes);
-                Part(visual, "Head", new Vector3(0, 1.55f, 0), new Vector3(.32f, .36f, .32f), skin);
-                limbs = new Transform[4];
-                for (int i = 0; i < 4; i++)
-                {
-                    limbs[i] = new GameObject("Owner limb").transform;
-                    limbs[i].SetParent(visual, false);
-                    limbs[i].localPosition = new Vector3((i % 2 == 0 ? -1 : 1) * (i < 2 ? .30f : .13f), i < 2 ? 1.25f : .75f, 0);
-                    Part(limbs[i], "Limb mesh", Vector3.down * .3f, new Vector3(.15f, .6f, .15f), i < 2 ? skin : clothes);
-                }
-            }
+            visual = new GameObject("Owner visual").transform; visual.SetParent(transform, false);
+            human = HumanVisual.Create(visual, 2580, HumanRole.Owner, false);
             if (mapCamera != null) { pcCamera=mapCamera.GetComponent<PcThirdPersonCamera>(); if(pcCamera==null)pcCamera=mapCamera.gameObject.AddComponent<PcThirdPersonCamera>(); pcCamera.Configure(motel,this,driving,mapCamera); }
             SetWalking(true);
-        }
-
-        private static void Part(Transform parent, string name, Vector3 position, Vector3 scale, Material material)
-        {
-            var part = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            part.name = name; part.transform.SetParent(parent, false);
-            part.transform.localPosition = position;
-            part.transform.localScale = new Vector3(scale.x, scale.y * .5f, scale.z);
-            part.GetComponent<Renderer>().sharedMaterial = material;
-            var collider = part.GetComponent<Collider>(); collider.enabled = false; Destroy(collider);
         }
 
         private void Update()
@@ -132,8 +106,7 @@ namespace RoadsideHaven
             character.Move((planarVelocity + Vector3.up * fallSpeed) * Time.deltaTime);
             if (move.sqrMagnitude > .01f) visual.rotation = Quaternion.Slerp(visual.rotation, Quaternion.LookRotation(move), Time.deltaTime * 12);
             gait += move.magnitude * speed * Time.deltaTime * 5;
-            if (limbs != null)
-                for (int i = 0; i < limbs.Length; i++) limbs[i].localRotation = Quaternion.Euler(Mathf.Sin(gait + (i == 0 || i == 3 ? 0 : Mathf.PI)) * 25 * move.magnitude, 0, 0);
+            if (human != null) human.Animate(planarVelocity.magnitude, speed > walkSpeed);
             if (mapCamera != null) mapCamera.FollowWorldPoint(transform.position);
         }
 
@@ -219,7 +192,6 @@ namespace RoadsideHaven
             }
         }
 
-        private void OnDestroy()
-        { if (skin != null) Destroy(skin); if (clothes != null) Destroy(clothes); }
+
     }
 }

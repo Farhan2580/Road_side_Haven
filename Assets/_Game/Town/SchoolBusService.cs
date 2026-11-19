@@ -21,11 +21,11 @@ namespace RoadsideHaven
         public void Configure(TownRoadNetwork roads,MotelAtmosphere time,Material uniform,Material skin,Transform population)
         {
             network=roads;clock=time;driver=GetComponent<TownVehicleAgent>();visuals=GetComponent<BusVisuals>();
-            for(int i=0;i<8;i++)
+            for(int i=0;i<12;i++)
             {
                 int destination=i%2+1;var obj=new GameObject("Student "+(i+1));obj.transform.SetParent(population,false);
                 var agent=obj.AddComponent<TownCitizenAgent>();agent.Initialize(uniform,skin,true);obj.AddComponent<WorldNpc>().Configure("student-"+i,destination==1?"School student":"College student");
-                var home=new Vector3(-105+i%4*10,0,0);agent.Warp(home);
+                var home=new Vector3(-105+i%4*3,0,1+(i/4)*1.2f);agent.Warp(home);
                 students.Add(new Student{Agent=agent,Home=home,Destination=destination,Campus=destination==1?new Vector3(-880+i*.55f,0,82):new Vector3(-880+i*.55f,0,222),Wait=destination==1?new Vector3(-880+i*.55f,0,33):new Vector3(-937,0,230+i*.55f),State=State.Home});
             }
             driver.SetRoute(System.Array.Empty<Vector3>());atStop=true;visuals.SetDoor(true);
@@ -57,7 +57,7 @@ namespace RoadsideHaven
             if(network==null)return;float hour=clock==null?8:clock.Hour;bool schoolTime=hour>=7&&hour<16;
             foreach(var student in students)
             {
-                if(student.State==State.Home&&schoolTime){student.State=State.ToPickup;Walk(student,new Vector3(-100+(students.IndexOf(student)%4)*.6f,0,0));}
+                if(student.State==State.Home&&schoolTime){student.State=State.ToPickup;Walk(student,new Vector3(-100+(students.IndexOf(student)%4)*.7f,0,(students.IndexOf(student)/4)*.8f));}
                 if(student.State==State.ToPickup&&student.Agent.Arrived)student.State=State.WaitOut;
                 if(student.State==State.ToCampus&&student.Agent.Arrived){student.State=State.Campus;student.Agent.gameObject.SetActive(false);}
                 if(student.State==State.Campus&&!schoolTime)

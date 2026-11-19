@@ -61,7 +61,8 @@ No Unity installation is needed to play. The first launch downloads the game, so
 | 🚗 **Leave the desk behind** | Walk in third person, enter nearby cars, CNGs, trucks or buses, and explore with a chase camera. |
 | 📦 **Work around town** | Bring in supplies, take NPC quests and build relationships and reputation. |
 | 🏙️ **A growing open world** | Explore a 2 km × 2 km regional base with modern downtown blocks, restaurant plazas, village areas and roadside districts. |
-| 🚦 **Streets with a routine** | Encounter traffic signals, pedestrian crossings, sidewalks, commuters, school transport and police patrols. |
+| 👥 **People with individuality** | Meet young, adult and senior characters with varied faces, hair, outfits and articulated walking. Town population targets are 192 on PC and 128 on phones, with local pedestrian avoidance. |
+| 🚦 **Streets with a routine** | Encounter traffic signals, pedestrian crossings, sidewalks, commuters, school transport and police patrols. Drivers anticipate queues and brake according to the gap ahead. |
 | 🌅 **A changing atmosphere** | See seasonal visuals and street, building and garden lighting, with an 80% day / 20% night cycle. |
 | 🏦 **Beyond one business** | Purchase and upgrade businesses, collect income and unlock more of the business portfolio. |
 | 🔮 **Four dimensions** | Visit Normal, Neon, Apocalypse and Fantasy overlays with separate wallets and cross-universe item trading. |
@@ -179,7 +180,7 @@ Without those activation secrets, the source-build workflow skips building and k
 <details>
 <summary><strong>Validation & troubleshooting</strong></summary>
 
-The Android browser release was checked with **86 passing Unity tests**, **22 passing browser/deployment tests** and **one Windows-only symlink test skip**. Desktop Chrome and Android Chrome emulation both loaded the public demo successfully. Touch checks covered walking, vehicle entry, simultaneous steering/gas, braking, exiting, camera swipes and menu/back actions.
+The character and town update was checked with **92 passing Unity tests**, **22 passing browser/deployment tests** and **one Windows-only symlink test skip**. Desktop Chrome and Android Chrome emulation both loaded the public demo successfully. Touch checks covered walking, vehicle entry, simultaneous steering/gas, braking, exiting, camera swipes and menu/back actions.
 
 Run Unity tests through **Window → General → Test Runner**, using the tests in `Assets/_Game/Tests/Editor`. Run browser tooling checks with:
 

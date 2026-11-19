@@ -7,8 +7,8 @@ namespace RoadsideHaven
     /// <summary>Persistent world-wide trips; actors never recycle around the camera.</summary>
     public sealed class TownPopulationController : MonoBehaviour
     {
-        [SerializeField,Range(8,80)] private int carCount=48;
-        [SerializeField,Range(12,160)] private int citizenCount=96;
+        [SerializeField,Range(8,96)] private int carCount=64;
+        [SerializeField,Range(12,256)] private int citizenCount=192;
         private readonly List<TownVehicleAgent> traffic=new List<TownVehicleAgent>();
         private sealed class Citizen {public TownCitizenAgent Agent;public Vector3 Home,Work;public bool AtWork,Shopper,Patrol;public float Wait;}
         private readonly List<Citizen> citizens=new List<Citizen>();
@@ -21,8 +21,9 @@ namespace RoadsideHaven
         private float timer;
         private int citizenCursor;
         private bool ready;
+        private readonly List<Vector3> citizenSpawns=new List<Vector3>();
         private readonly List<Bounds> reserved=new List<Bounds>();
-        public void ConfigureAllDistricts(){carCount=Mathf.Max(48,carCount);citizenCount=Mathf.Max(96,citizenCount);}
+        public void ConfigureAllDistricts(){carCount=Mathf.Max(64,carCount);citizenCount=Mathf.Max(192,citizenCount);}
         private IEnumerator Start()
         {
             yield return null;yield return null;
@@ -59,7 +60,9 @@ namespace RoadsideHaven
             var coachRoute=network.Route(new Vector3(-240,0,-13),new Vector3(180,0,650),false,6);
             if(coachRoute.Length>1&&Clear(coachRoute[0],Quaternion.LookRotation(coachRoute[1]-coachRoute[0]),new Vector3(2.85f,3.5f,11)))
             {var coach=Vehicle("Silver intercity coach",coachRoute[0],Quaternion.LookRotation(coachRoute[1]-coachRoute[0]),new Vector3(2.85f,3.5f,11));coach.gameObject.AddComponent<BusVisuals>().Configure(false);var agent=coach.gameObject.AddComponent<TownVehicleAgent>();agent.SetRoute(coachRoute,10);traffic.Add(agent);driving.RegisterVehicle(coach);}
-            for(int i=0;i<carCount;i++)
+            bool phone=MobileTouchInput.Enabled||Application.isMobilePlatform||SystemInfo.deviceType==DeviceType.Handheld;
+            int vehicleBudget=phone?TownMotion.CarBudget(true):Mathf.Max(carCount,TownMotion.CarBudget(false));
+            for(int i=0;i<vehicleBudget;i++)
             {
                 Vector3[] route=null;
                 for(int attempt=0;attempt<40;attempt++)
@@ -77,19 +80,34 @@ namespace RoadsideHaven
                 var agent=body.gameObject.AddComponent<TownVehicleAgent>();agent.SetRoute(route,7+i%4);traffic.Add(agent);driving.RegisterVehicle(body);
                 yield return null;
             }
-            for(int i=0;i<citizenCount;i++)
+            phone=phone||MobileTouchInput.Enabled;
+            int peopleBudget=phone?TownMotion.PeopleBudget(true):Mathf.Max(citizenCount,TownMotion.PeopleBudget(false));
+            for(int i=0;i<peopleBudget;i++)
             {
                 bool doctor=i%12==0,police=i%12==1,jogger=i%10==3,shopper=(i%3==0||jogger)&&!doctor&&!police;
                 var obj=new GameObject(doctor?"Doctor "+i:police?"Police officer "+i:"Citizen "+i);obj.transform.SetParent(transform,false);var agent=obj.AddComponent<TownCitizenAgent>();
-                Color color=doctor?new Color(.92f,.95f,.96f):police?new Color(.04f,.09f,.22f):Color.HSVToRGB((i*.117f)%1,.45f,.55f);
-                agent.Initialize(Mat("Clothes "+i,color),skin,false);agent.SetJogging(jogger);obj.AddComponent<WorldNpc>().Configure("town-citizen-"+i,doctor?"Doctor":police?"Police officer":jogger?"Jogger":shopper?"City shopper":"Office worker");
+
+                agent.Initialize(null,skin,false);agent.SetJogging(jogger);obj.AddComponent<WorldNpc>().Configure("town-citizen-"+i,doctor?"Doctor":police?"Police officer":jogger?"Jogger":shopper?"City shopper":"Office worker");
                 var road=network.Roads[i%network.Roads.Count];var fallback=Sidewalk(road,Random.Range(.1f,.9f));
                 var home=i%4==0&&homes.Count>0?homes[i%homes.Count]+Vector3.right*(i%3)*.6f:fallback;
                 var options=doctor?clinics:police?stations:workplaces;
                 var work=options.Count>0?options[i%options.Count]+Vector3.right*(i%3)*.8f:Sidewalk(road,.8f);
-                agent.Warp(home);citizens.Add(new Citizen{Agent=agent,Home=home,Work=work,Shopper=shopper,Patrol=police,Wait=i%10});
+                if(!TryCitizenSpawn(home,out home)){Destroy(obj);continue;}
+                agent.Warp(home);citizens.Add(new Citizen{Agent=agent,Home=home,Work=work,Shopper=shopper,Patrol=police,Wait=Random.Range(1f,14f)});
+                if(i%4==0)yield return null;
             }
             ready=true;
+        }
+        private bool TryCitizenSpawn(Vector3 preferred,out Vector3 point)
+        {
+            point=preferred;
+            for(int attempt=0;attempt<24;attempt++)
+            {
+                if(attempt>0){var road=network.Roads[Random.Range(0,network.Roads.Count)];point=Sidewalk(road,Random.Range(.08f,.92f));if(attempt%2==0)point=TownRoadNetwork.Project(point,road)*2-point;}
+                bool clear=true;foreach(var other in citizenSpawns)if((point-other).sqrMagnitude<1.4f){clear=false;break;}
+                if(clear&&!Physics.CheckCapsule(point+Vector3.up*.4f,point+Vector3.up*1.5f,.28f,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore)){citizenSpawns.Add(point);return true;}
+            }
+            return false;
         }
         public static bool RoadName(string name)=>name=="Airport access road"||name=="Connected road"||name=="Road"||name=="Highway extension"||name=="North avenue"||name=="Connecting avenue";
         private Vector3 RandomRoadPoint(){var road=network.Roads[Random.Range(0,network.Roads.Count)];return Vector3.Lerp(road.A,road.B,Random.Range(.08f,.92f));}
@@ -129,10 +147,10 @@ namespace RoadsideHaven
                 var person=citizens[citizenCursor++%citizens.Count];
                 person.Wait-=.1f*Mathf.Max(1,citizens.Count/4f);if(!person.Agent.Arrived)continue;
                 if(person.Patrol&&workTime)
-                {person.AtWork=true;if(person.Wait>0)continue;person.Wait=12;var road=network.Nearest(person.Work);person.Agent.Walk(network.Route(person.Agent.transform.position,Sidewalk(road,Random.Range(.15f,.85f)),true));}
+                {person.AtWork=true;if(person.Wait>0)continue;person.Wait=Random.Range(5f,16f);var road=network.Nearest(person.Work);person.Agent.Walk(network.Route(person.Agent.transform.position,Sidewalk(road,Random.Range(.15f,.85f)),true));}
                 else if(person.Shopper)
-                {if(person.Wait>0)continue;person.Wait=20;var road=network.Roads[Random.Range(0,network.Roads.Count)];person.Agent.Walk(network.Route(person.Agent.transform.position,Sidewalk(road,Random.Range(.1f,.9f)),true));}
-                else if(workTime!=person.AtWork)
+                {if(person.Wait>0)continue;person.Wait=Random.Range(3f,20f);var road=network.Roads[Random.Range(0,network.Roads.Count)];person.Agent.Walk(network.Route(person.Agent.transform.position,Sidewalk(road,Random.Range(.1f,.9f)),true));}
+                else if(workTime!=person.AtWork && person.Wait<=0)
                 {person.AtWork=workTime;person.Agent.Walk(network.Route(person.Agent.transform.position,workTime?person.Work:person.Home,true));}
             }
         }

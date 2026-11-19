@@ -39,7 +39,11 @@ namespace RoadsideHaven
         public int Phase {get;private set;}
         public void Configure(Transform plane,Transform heli,Transform rotor,Transform tail,Transform landingGear,Transform gateBridge,Transform[] people,Transform[] peopleLegs,Transform[] doors,Light[] lights,TMP_Text board)
         {jet=plane;helicopter=heli;mainRotor=rotor;tailRotor=tail;gear=landingGear;bridge=gateBridge;passengers=people;legs=peopleLegs;entranceDoors=doors;apronLights=lights;flightBoard=board;}
-        private void Start(){radar=transform.Find("ATC rotating radar");owner=GetComponentInParent<MotelGameRoot>()?.GetComponentInChildren<OwnerSandboxController>(true);atmosphere=GetComponentInParent<MotelAtmosphere>();}
+        private void Start(){
+            foreach(Transform person in transform)
+                if(person.name.StartsWith("Boarding passenger")||person.name.StartsWith("Airport check-in staff"))
+                {HumanVisual.HideOldVisuals(person);HumanVisual.Create(person,HumanIdentity.StableSeed(person.name));}
+radar=transform.Find("ATC rotating radar");owner=GetComponentInParent<MotelGameRoot>()?.GetComponentInChildren<OwnerSandboxController>(true);atmosphere=GetComponentInParent<MotelAtmosphere>();}
         private void Update()
         {
             clock+=Time.deltaTime;float t=clock;if(radar!=null)radar.Rotate(0,22*Time.deltaTime,0);

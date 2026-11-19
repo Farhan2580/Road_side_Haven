@@ -1,57 +1,71 @@
 using UnityEngine;
 namespace RoadsideHaven
 {
-    /// <summary>Collision-aware sidewalk walking with a simple articulated shared-material citizen.</summary>
+    /// <summary>Individual sidewalk travellers with local separation, anticipation and articulated human visuals.</summary>
     [RequireComponent(typeof(CharacterController))]
     public sealed class TownCitizenAgent : MonoBehaviour
     {
         private CharacterController controller;
         private Transform visual;
-        private Transform[] limbs;
+        private HumanVisual human;
         private Vector3[] route;
-        private int next;
-        private float vertical,gait;
+        private int next,identity;
+        private float vertical,nextThink,pace=1.5f;
         private bool jogging;
-        public void SetJogging(bool value){jogging=value;}
+        private Vector3 velocity,steering;
+        private readonly Collider[] neighbours=new Collider[20];
+        public Vector3 Velocity=>velocity;
+        public void SetJogging(bool value){jogging=value&&human.Identity.Age!=HumanAge.Senior;}
         public bool Arrived=>route==null||next>=route.Length;
         public void Initialize(Material clothing,Material skin,bool student)
         {
-            controller=GetComponent<CharacterController>();controller.height=student?1.45f:1.75f;controller.center=Vector3.up*controller.height*.5f;controller.radius=.23f;controller.stepOffset=.25f;controller.skinWidth=.03f;
-            visual=new GameObject("Citizen visual").transform;visual.SetParent(transform,false);visual.localScale=Vector3.one*(student?.83f:1);
-            Part(visual,new Vector3(0,1,0),new Vector3(.44f,.58f,.28f),clothing);
-            Part(visual,new Vector3(0,1.48f,0),new Vector3(.3f,.34f,.3f),skin);
-            limbs=new Transform[4];for(int i=0;i<4;i++)
-            {
-                var limb=new GameObject("Walking limb").transform;limb.SetParent(visual,false);limb.localPosition=new Vector3((i%2==0?-1:1)*(i<2?.29f:.12f),i<2?1.2f:.72f,0);limbs[i]=limb;
-                Part(limb,Vector3.down*.3f,new Vector3(.13f,.6f,.14f),i<2?skin:clothing);
-            }
-        }
-        private static void Part(Transform parent,Vector3 position,Vector3 scale,Material material)
-        {
-            var obj=GameObject.CreatePrimitive(PrimitiveType.Capsule);obj.transform.SetParent(parent,false);obj.transform.localPosition=position;obj.transform.localScale=new Vector3(scale.x,scale.y*.5f,scale.z);obj.GetComponent<Renderer>().sharedMaterial=material;
-            var collider=obj.GetComponent<Collider>();collider.enabled=false;if(Application.isPlaying)Destroy(collider);else DestroyImmediate(collider);
+            controller=GetComponent<CharacterController>();identity=HumanIdentity.StableSeed(name);var role=student?HumanRole.Student:HumanIdentity.RoleFromName(name);
+            visual=new GameObject("Citizen visual").transform;visual.SetParent(transform,false);human=HumanVisual.Create(visual,identity,role,false);pace=human.Identity.Pace;
+            controller.height=human.Identity.Height;controller.center=Vector3.up*controller.height*.5f;controller.radius=.24f;controller.stepOffset=.25f;controller.skinWidth=.03f;
+            nextThink=Time.time+(identity%17)*.01f;
         }
         public void Walk(Vector3[] points){route=points;next=0;gameObject.SetActive(true);}
-        public void Warp(Vector3 point){if(controller==null)controller=GetComponent<CharacterController>();controller.enabled=false;transform.position=point+Vector3.up*.3f;controller.enabled=true;vertical=0;}
+        public void Warp(Vector3 point){if(controller==null)controller=GetComponent<CharacterController>();controller.enabled=false;transform.position=point+Vector3.up*.3f;controller.enabled=true;vertical=0;velocity=steering=Vector3.zero;}
+        private void Think(Vector3 direction,float speed)
+        {
+            Vector3 avoid=Vector3.zero;int count=Physics.OverlapSphereNonAlloc(transform.position+Vector3.up*.8f,2.1f,neighbours,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
+            for(int i=0;i<count;i++)
+            {
+                var c=neighbours[i];if(c==null||c.transform.IsChildOf(transform)||!(c is CharacterController))continue;
+                var other=c.GetComponent<TownCitizenAgent>();avoid+=TownMotion.PersonalSpace(transform.position,direction*speed,c.transform.position,other==null?Vector3.zero:other.Velocity,identity);
+            }
+            steering=Vector3.ClampMagnitude(avoid,1);
+            Vector3 origin=transform.position+Vector3.up*.85f;
+            if(direction.sqrMagnitude>.1f&&Physics.SphereCast(origin,.19f,direction,out var hit,.9f,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore)&&!hit.transform.IsChildOf(transform)&&hit.normal.y<.6f)
+            {
+                var tangent=Vector3.ProjectOnPlane(direction,hit.normal);tangent.y=0;
+                if(tangent.sqrMagnitude<.02f)tangent=Vector3.Cross(Vector3.up,direction);
+                if(!Physics.SphereCast(origin,.2f,tangent.normalized,out _,.65f,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore))steering+=tangent.normalized;
+                else steering=-direction*.8f;
+            }
+        }
         private void Update()
         {
-            Vector3 move=Vector3.zero;
+            if(controller==null)return;Vector3 move=Vector3.zero;float speed=jogging?pace*1.75f:pace;
             if(route!=null&&next<route.Length)
             {
                 Vector3 delta=route[next]-transform.position;delta.y=0;
-                if(delta.magnitude<.7f)next++;
-                else
+                if(delta.magnitude<.55f)next++;
+                else if(!StreetJunction.PedestrianMustWait(transform.position,route[next],speed))
                 {
-                    move=StreetJunction.PedestrianMustWait(transform.position,route[next],jogging?2.9f:1.65f)?Vector3.zero:delta.normalized;
-                    if(Physics.Raycast(transform.position+Vector3.up*.75f,move,out var hit,.85f,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore)&&!hit.transform.IsChildOf(transform))
-                    {Vector3 side=Vector3.Cross(Vector3.up,move);if(Physics.Raycast(transform.position+Vector3.up*.75f,side,.8f))side=-side;move=(move*.15f+side).normalized;}
+                    var direction=delta.normalized;
+                    if(Time.time>=nextThink){nextThink=Time.time+.14f+(identity%7)*.009f;Think(direction,speed);}
+                    // A small personal lane offset fades out at corners, preserving crossing endpoints.
+                    float lane=Mathf.Sin(Time.time*.45f+(identity%997)*.01f)*.09f*Mathf.Clamp01(delta.magnitude-2);
+                    move=Vector3.ClampMagnitude(direction+steering*.85f+Vector3.Cross(Vector3.up,direction)*lane,1)*speed;
                 }
             }
-            vertical=controller.isGrounded?-2:Mathf.Max(-25,vertical-18*Time.deltaTime);
-            controller.Move((move*(jogging?2.9f:1.65f)+Vector3.up*vertical)*Time.deltaTime);
-            if(visual!=null&&move.sqrMagnitude>.01f)visual.rotation=Quaternion.Slerp(visual.rotation,Quaternion.LookRotation(move),Time.deltaTime*8);
-            gait+=move.magnitude*Time.deltaTime*(jogging?11:7);
-            if(limbs!=null)for(int i=0;i<4;i++)limbs[i].localRotation=Quaternion.Euler(Mathf.Sin(gait+(i==0||i==3?0:Mathf.PI))*25*move.magnitude,0,0);
+            velocity=Vector3.MoveTowards(velocity,move,Time.deltaTime*(move.sqrMagnitude<.01f?8:4));
+            vertical=controller.isGrounded?-2:Mathf.Max(-25,vertical-18*Time.deltaTime);Vector3 before=transform.position;
+            controller.Move((velocity+Vector3.up*vertical)*Time.deltaTime);
+            Vector3 actual=transform.position-before;actual.y=0;
+            if(visual!=null&&actual.sqrMagnitude>.000001f)visual.rotation=Quaternion.Slerp(visual.rotation,Quaternion.LookRotation(actual),1-Mathf.Exp(-7*Time.deltaTime));
+            human.Animate(Time.deltaTime>0?actual.magnitude/Time.deltaTime:0,jogging);
         }
     }
 }
